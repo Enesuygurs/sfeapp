@@ -6,57 +6,68 @@ import pytesseract
 import deepl
 import tkinter as tk
 import threading
-import keyboard  # YENİ: Klavye dinleme kütüphanesi
-import os        # YENİ: Programı kapatmak için
+import keyboard
+import os
+import configparser # YENİ: Ayar dosyasını okumak için
 
-# ------------------- AYARLAR BÖLÜMÜ (BURAYI KENDİNE GÖRE DÜZENLE) -------------------
+# ------------------- AYARLARI config.ini DOSYASINDAN OKUMA -------------------
+# YENİ: Tüm ayarlar bölümü artık bu bloktan yönetiliyor.
 
-# 1. Tesseract
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+config = configparser.ConfigParser()
+config.read('config.ini', encoding='utf-8') # UTF-8 desteği ekledik
 
-# 2. Altyazı Bölgesi
-altyazi_bolgesi = {'top': 966, 'left': 599, 'width': 726, 'height': 112}
+# Genel Ayarlar
+TESSERACT_YOLU = config.get('Genel', 'tesseract_yolu')
+DEEPL_API_KEY = config.get('Genel', 'api_anahtari')
 
-# 3. DeepL API Anahtarı
-DEEPL_API_KEY = "1586ca4b-6a12-479d-96be-49de1f5b190d:fx"
+# Bölge Ayarları
+altyazi_bolgesi = {
+    'top': config.getint('Bolge', 'top'),
+    'left': config.getint('Bolge', 'left'),
+    'width': config.getint('Bolge', 'width'),
+    'height': config.getint('Bolge', 'height')
+}
 
-# 4. Arayüz Ayarları
-FONT_BOYUTU = 20
-FONT_RENGI = "white"
-ARKA_PLAN_RENGI = "black"
-SEFFAFLIK = 0.7
-EKRAN_UST_BOSLUK = 30
-KONTROL_ARALIGI = 0.5
+# Arayüz Ayarları
+FONT_BOYUTU = config.getint('Arayuz', 'font_boyutu')
+FONT_RENGI = config.get('Arayuz', 'font_rengi')
+ARKA_PLAN_RENGI = config.get('Arayuz', 'arka_plan_rengi')
+SEFFAFLIK = config.getfloat('Arayuz', 'seffaflik')
+EKRAN_UST_BOSLUK = config.getint('Arayuz', 'ekran_ust_bosluk')
+KONTROL_ARALIGI = config.getfloat('Arayuz', 'kontrol_araligi')
+
+# Kısayol Ayarları
+DURDUR_DEVAM_ET_TUSU = config.get('Kisayollar', 'durdur_devam_et')
+PROGRAMI_KAPAT_TUSU = config.get('Kisayollar', 'programi_kapat')
+
+# Tesseract yolunu ayarla
+pytesseract.pytesseract.tesseract_cmd = TESSERACT_YOLU
 
 # ------------------------------------------------------------------------------------
 
-# Global Değişkenler
+# Global Değişkenler ve Fonksiyonlar (Önceki kodla neredeyse aynı)
 son_metin = ""
-is_paused = False  # YENİ: Duraklatma durumunu tutan bayrak
+is_paused = False
 translator = deepl.Translator(DEEPL_API_KEY)
 sct = mss.mss()
 gui = None
 
-# YENİ: Programı Duraklatma/Devam ettirme fonksiyonu
 def toggle_pause():
     global is_paused
-    is_paused = not is_paused  # Durumu tersine çevir (True ise False, False ise True)
+    is_paused = not is_paused
     status = "DURAKLATILDI" if is_paused else "DEVAM EDİYOR"
-    print(f"\n--- ÇEVİRİ {status} --- (Devam etmek/duraklatmak için F9)")
-    
-    # Duraklatıldığında ekrandaki yazıyı temizle
+    print(f"\n--- ÇEVİRİ {status} --- (Kısayol: {DURDUR_DEVAM_ET_TUSU})")
     if is_paused and gui:
         gui.update_text("")
 
-# YENİ: Programı güvenli bir şekilde kapatma fonksiyonu
 def quit_program():
-    print("\n--- F10'a basıldı. Program kapatılıyor... ---")
-    gui.root.quit() # Önce GUI'yi kapat
-    os._exit(0)     # Sonra tüm programı sonlandır
+    print(f"\n--- '{PROGRAMI_KAPAT_TUSU}' basıldı. Program kapatılıyor... ---")
+    if gui:
+        gui.root.quit()
+    os._exit(0)
 
-# Arayüzü oluşturacak ve yönetecek sınıf (Değişiklik yok)
+# OverlayGUI sınıfı ve diğer fonksiyonlar (Değişiklik yok)
 class OverlayGUI:
-    # ... Bu sınıfın içeriği önceki kodla aynı, o yüzden buraya tekrar kopyalamıyorum ...
     def __init__(self):
         self.root = tk.Tk()
         self.root.overrideredirect(True)
@@ -84,15 +95,12 @@ def start_gui():
     global gui
     gui = OverlayGUI()
     gui.run()
-
-# Ana çeviri döngüsü
+    
+# main_translation_loop fonksiyonu (Değişiklik yok)
 def main_translation_loop():
     global son_metin, is_paused
-
     time.sleep(2)
-
     while True:
-        # DEĞİŞTİRİLDİ: Ana döngünün başına duraklatma kontrolü eklendi
         if not is_paused:
             try:
                 ekran_goruntusu = sct.grab(altyazi_bolgesi)
@@ -101,7 +109,6 @@ def main_translation_loop():
                 _, islenmis_img = cv2.threshold(gri_img, 180, 255, cv2.THRESH_BINARY_INV)
                 metin = pytesseract.image_to_string(islenmis_img, lang='eng')
                 temiz_metin = metin.strip().replace('\n', ' ')
-
                 if temiz_metin and temiz_metin != son_metin:
                     son_metin = temiz_metin
                     print(f"Orijinal: {temiz_metin}")
@@ -122,20 +129,19 @@ def main_translation_loop():
                 son_metin = ""
                 if gui:
                     gui.update_text("[Program hatası...]")
-        
-        # Bekleme komutu döngünün sonuna taşındı ki her durumda çalışsın
         time.sleep(KONTROL_ARALIGI)
 
 if __name__ == "__main__":
-    # YENİ: Klavye kısayollarını ayarla
-    keyboard.add_hotkey('f9', toggle_pause)
-    keyboard.add_hotkey('f10', quit_program)
+    # Klavye kısayollarını config dosyasından okunan değerlerle ayarla
+    keyboard.add_hotkey(DURDUR_DEVAM_ET_TUSU, toggle_pause)
+    keyboard.add_hotkey(PROGRAMI_KAPAT_TUSU, quit_program)
 
+    print("Ayarlar 'config.ini' dosyasından yüklendi.")
     print("Program başlatıldı. Arayüz yükleniyor...")
     print("--------------------------------------------------")
     print("KONTROLLER:")
-    print("F9 -> Çeviriyi Duraklat / Devam Ettir")
-    print("F10 -> Programı Kapat")
+    print(f"{DURDUR_DEVAM_ET_TUSU} -> Çeviriyi Duraklat / Devam Ettir")
+    print(f"{PROGRAMI_KAPAT_TUSU} -> Programı Kapat")
     print("--------------------------------------------------")
 
     gui_thread = threading.Thread(target=start_gui, daemon=True)
