@@ -45,15 +45,22 @@ son_metin = ""; is_paused = False; gui = None; tray_icon = None
 translator = deepl.Translator(DEEPL_API_KEY)
 DESTEKLENEN_DILLER = {"Türkçe": "TR", "İngilizce": "EN-US", "Almanca": "DE", "Fransızca": "FR", "İspanyolca": "ES", "Japonca": "JA"}
 
-# DÜZELTME: Fonksiyon artık ekstra argümanları (*args) kabul ediyor.
 def dili_degistir(dil_kodu, *args):
     global HEDEF_DIL
     if HEDEF_DIL != dil_kodu:
         HEDEF_DIL = dil_kodu; ayarlari_kaydet()
         print(f"Hedef dil {dil_kodu} olarak değiştirildi."); update_tray_menu()
 
-def toggle_pause(): global is_paused; is_paused = not is_paused; update_tray_menu();
-def quit_program(*args): os._exit(0) # Buna da *args eklemek iyi bir alışkanlıktır
+# DÜZELTME: Fonksiyon artık *args alıyor ve duraklatıldığında ekranı temizliyor.
+def toggle_pause(*args):
+    global is_paused
+    is_paused = not is_paused
+    update_tray_menu()
+    # Eğer program duraklatıldıysa ve arayüz varsa, ekrandaki yazıyı temizle.
+    if is_paused and gui:
+        gui.update_text("")
+
+def quit_program(*args): os._exit(0)
 
 def update_tray_menu():
     global tray_icon, is_paused, HEDEF_DIL
