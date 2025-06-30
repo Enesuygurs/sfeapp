@@ -1,0 +1,17 @@
+{
+    "app_title": "Traductor de Subtítulos de Juegos",
+    "menu_pause": "Pausar",
+    "menu_resume": "Reanudar",
+    "menu_select_area": "Seleccionar Área de Subtítulos",
+    "menu_target_language": "Idioma de Destino",
+    "menu_interface_language": "Idioma de la Interfaz",
+    "menu_exit": "Salir",
+    "console_loading_settings": "Configuración cargada desde config.ini.",
+    "console_starting": "Programa iniciado. Cargando interfaz...",
+    "console_controls_header": "CONTROLES:",
+    "console_hotkey_pause": "-> Pausar / Reanudar traducción",
+    "console_hotkey_exit": "-> Salir del programa",
+    "console_hotkey_select": "-> Seleccionar Área de Subtítulos",
+    "console_status_paused": "TRADUCCIÓN EN PAUSA",
+    "console_status_resumed": "TRADUCCIÓN REANUDADA"
+}

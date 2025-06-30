@@ -1,45 +1,52 @@
-import time
-import cv2
-import numpy as np
-import mss
-import pytesseract
-import deepl
-import tkinter as tk
-import threading
-import keyboard
-import os
-import configparser
+import time, cv2, numpy as np, mss, pytesseract, deepl, tkinter as tk, threading, keyboard, os, configparser, json
 from pystray import MenuItem as item, Menu as menu
 import pystray
 from PIL import Image
 from functools import partial
-import json
 
-# --- config.ini ve diller.json Dosyası Yönetimi ---
+# --- Global Değişkenler ---
+LANG_STRINGS = {} # Arayüz metinlerini tutacak sözlük
+DESTEKLENEN_ARAYUZ_DILLERI = {} # lang klasöründeki dilleri tutacak
+
+# --- Dil Yönetimi ---
+def get_lang(key):
+    # Verilen anahtara karşılık gelen metni döndürür, bulamazsa anahtarı döndürür.
+    return LANG_STRINGS.get(key, key)
+
+def arayuz_dilini_yukle(dil_kodu):
+    global LANG_STRINGS
+    try:
+        with open(f"lang/{dil_kodu}.json", 'r', encoding='utf-8') as f:
+            LANG_STRINGS = json.load(f)
+    except FileNotFoundError:
+        print(f"Dil dosyası bulunamadı: lang/{dil_kodu}.json. İngilizce'ye (EN) geçiliyor.")
+        with open("lang/en.json", 'r', encoding='utf-8') as f:
+            LANG_STRINGS = json.load(f)
+
+# --- Ayar Yönetimi ---
+# ... (Bu bölümdeki fonksiyonların çoğu aynı, sadece arayüz dili yönetimi eklendi) ...
 CONFIG_DOSYASI = 'config.ini'
 DILLER_DOSYASI = 'diller.json'
 config = configparser.ConfigParser()
-DESTEKLENEN_DILLER = {}
+DESTEKLENEN_HEDEF_DILLER = {}
 
 def ayarlari_yukle():
-    global DESTEKLENEN_DILLER
-    if not os.path.exists(DILLER_DOSYASI):
-        print(f"{DILLER_DOSYASI} bulunamadı, varsayılan dillerle oluşturuluyor.")
-        varsayilan_diller = {"Türkçe": "TR", "İngilizce": "EN-US", "Almanca": "DE"}
-        with open(DILLER_DOSYASI, 'w', encoding='utf-8') as f:
-            json.dump(varsayilan_diller, f, ensure_ascii=False, indent=4)
+    global DESTEKLENEN_HEDEF_DILLER, DESTEKLENEN_ARAYUZ_DILLERI
+    # Arayüz dillerini tara
+    if os.path.exists('lang'):
+        for f_name in os.listdir('lang'):
+            if f_name.endswith('.json'):
+                lang_code = f_name.split('.')[0].upper()
+                DESTEKLENEN_ARAYUZ_DILLERI[lang_code] = lang_code # Örn: {"EN": "EN", "TR": "TR"}
+    # Hedef dilleri yükle
     with open(DILLER_DOSYASI, 'r', encoding='utf-8') as f:
-        DESTEKLENEN_DILLER = json.load(f)
-
-    if not os.path.exists(CONFIG_DOSYASI):
-        config['Genel'] = {'tesseract_yolu': r'C:\Program Files\Tesseract-OCR\tesseract.exe', 'api_anahtari': 'API_ANAHTARINIZI_BURAYA_GIRIN', 'hedef_dil': 'TR'}
-        config['Bolge'] = {'top': '0', 'left': '0', 'width': '0', 'height': '0'}
-        config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.5'}
-        config['Kisayollar'] = {'durdur_devam_et': 'f9', 'programi_kapat': 'f10', 'alan_sec': 'f8'}
-        ayarlari_kaydet_config(config)
-    
+        DESTEKLENEN_HEDEF_DILLER = json.load(f)
+    # config.ini dosyasını yükle
     config.read(CONFIG_DOSYASI, encoding='utf-8')
-    global TESSERACT_YOLU, DEEPL_API_KEY, HEDEF_DIL, altyazi_bolgesi, FONT_BOYUTU, FONT_RENGI, ARKA_PLAN_RENGI, SEFFAFLIK, EKRAN_UST_BOSLUK, KONTROL_ARALIGI, DURDUR_DEVAM_ET_TUSU, PROGRAMI_KAPAT_TUSU, ALAN_SEC_TUSU
+    # Ayarları global değişkenlere yükle
+    global TESSERACT_YOLU, DEEPL_API_KEY, HEDEF_DIL, ARAYUZ_DILI, altyazi_bolgesi, FONT_BOYUTU, FONT_RENGI, ARKA_PLAN_RENGI, SEFFAFLIK, EKRAN_UST_BOSLUK, KONTROL_ARALIGI, DURDUR_DEVAM_ET_TUSU, PROGRAMI_KAPAT_TUSU, ALAN_SEC_TUSU
+    ARAYUZ_DILI = config.get('Genel', 'arayuz_dili', fallback='EN').upper()
+    arayuz_dilini_yukle(ARAYUZ_DILI) # Dil metinlerini yükle
     TESSERACT_YOLU = config.get('Genel', 'tesseract_yolu'); DEEPL_API_KEY = config.get('Genel', 'api_anahtari')
     HEDEF_DIL = config.get('Genel', 'hedef_dil', fallback='TR').upper()
     altyazi_bolgesi = {'top': config.getint('Bolge', 'top'), 'left': config.getint('Bolge', 'left'), 'width': config.getint('Bolge', 'width'), 'height': config.getint('Bolge', 'height')}
@@ -47,61 +54,58 @@ def ayarlari_yukle():
     SEFFAFLIK = config.getfloat('Arayuz', 'seffaflik'); EKRAN_UST_BOSLUK = config.getint('Arayuz', 'ekran_ust_bosluk'); KONTROL_ARALIGI = config.getfloat('Arayuz', 'kontrol_araligi')
     DURDUR_DEVAM_ET_TUSU = config.get('Kisayollar', 'durdur_devam_et'); PROGRAMI_KAPAT_TUSU = config.get('Kisayollar', 'programi_kapat'); ALAN_SEC_TUSU = config.get('Kisayollar', 'alan_sec')
 
-def ayarlari_kaydet_config(config_obj):
-    with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile: config_obj.write(configfile)
-
 def ayarlari_kaydet():
+    config.set('Genel', 'arayuz_dili', str(ARAYUZ_DILI))
+    config.set('Genel', 'hedef_dil', str(HEDEF_DIL))
     config.set('Bolge', 'top', str(altyazi_bolgesi['top'])); config.set('Bolge', 'left', str(altyazi_bolgesi['left']))
     config.set('Bolge', 'width', str(altyazi_bolgesi['width'])); config.set('Bolge', 'height', str(altyazi_bolgesi['height']))
-    config.set('Genel', 'hedef_dil', str(HEDEF_DIL))
-    ayarlari_kaydet_config(config)
+    with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile: config.write(configfile)
 
-ayarlari_yukle(); pytesseract.pytesseract.tesseract_cmd = TESSERACT_YOLU
+# --- Uygulama Fonksiyonları ---
 son_metin = ""; is_paused = False; gui = None; tray_icon = None
-translator = deepl.Translator(DEEPL_API_KEY)
 
-def dili_degistir(dil_kodu, *args):
+def hedef_dili_degistir(dil_kodu, *args):
     global HEDEF_DIL
     if HEDEF_DIL != dil_kodu:
-        HEDEF_DIL = dil_kodu; ayarlari_kaydet()
-        print(f"Hedef dil {dil_kodu} olarak değiştirildi."); update_tray_menu()
+        HEDEF_DIL = dil_kodu; ayarlari_kaydet(); update_tray_menu()
 
-# DÜZELTME: Fonksiyonun doğru ve tam hali.
+def arayuz_dilini_degistir(dil_kodu, *args):
+    global ARAYUZ_DILI
+    if ARAYUZ_DILI != dil_kodu:
+        ARAYUZ_DILI = dil_kodu; arayuz_dilini_yukle(dil_kodu); ayarlari_kaydet(); update_tray_menu()
+
 def toggle_pause(*args):
-    global is_paused
-    is_paused = not is_paused
-    status = "DURAKLATILDI" if is_paused else "DEVAM EDİYOR"
-    print(f"\n--- ÇEVİRİ {status} ---")
-    update_tray_menu()
-    # Eğer program duraklatıldıysa ve arayüz varsa, ekrandaki yazıyı temizle.
-    if is_paused and gui:
-        gui.update_text("")
+    global is_paused; is_paused = not is_paused
+    print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---")
+    update_tray_menu();
+    if is_paused and gui: gui.update_text("")
 
 def quit_program(*args): os._exit(0)
 
 def update_tray_menu():
-    global tray_icon, is_paused, HEDEF_DIL
-    pause_text = "Devam Ettir" if is_paused else "Duraklat"
-    dil_menu_items = []
-    for dil_adi, dil_kodu in DESTEKLENEN_DILLER.items():
-        dil_menu_items.append(
-            item(
-                dil_adi,
-                partial(dili_degistir, dil_kodu),
-                checked=lambda item, k=dil_kodu: HEDEF_DIL == k,
-                radio=True
-            )
-        )
-    
+    global tray_icon
+    pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
+    # Hedef Dil Menüsü
+    hedef_dil_items = []
+    for dil_adi, dil_kodu in DESTEKLENEN_HEDEF_DILLER.items():
+        hedef_dil_items.append(item(dil_adi, partial(hedef_dili_degistir, dil_kodu), checked=lambda item, k=dil_kodu: HEDEF_DIL == k, radio=True))
+    # Arayüz Dili Menüsü
+    arayuz_dil_items = []
+    for dil_kodu in DESTEKLENEN_ARAYUZ_DILLERI:
+        arayuz_dil_items.append(item(dil_kodu, partial(arayuz_dilini_degistir, dil_kodu), checked=lambda item, k=dil_kodu: ARAYUZ_DILI == k, radio=True))
+    # Ana Menü
     new_menu = menu(
         item(pause_text, toggle_pause),
-        item('Altyazı Alanını Seç', lambda: alani_sec_ve_kaydet()),
-        item('Hedef Dil', menu(*dil_menu_items)),
-        item('Çıkış', quit_program)
+        item(get_lang('menu_select_area'), lambda: alani_sec_ve_kaydet()),
+        item(get_lang('menu_target_language'), menu(*hedef_dil_items)),
+        item(get_lang('menu_interface_language'), menu(*arayuz_dil_items)),
+        item(get_lang('menu_exit'), quit_program)
     )
-    if tray_icon: tray_icon.menu = new_menu
+    if tray_icon:
+        tray_icon.title = get_lang('app_title')
+        tray_icon.menu = new_menu
 
-# Diğer tüm sınıflar ve fonksiyonlar aynı kalıyor, değişiklik yok.
+# ... (AlanSecici, OverlayGUI, ve diğer tüm yardımcı fonksiyonlar aynı kalıyor) ...
 class AlanSecici:
     def __init__(self): self.root = tk.Tk(); self.root.withdraw(); self.secim_penceresi = tk.Toplevel(self.root); self.secim_penceresi.attributes("-fullscreen", True); self.secim_penceresi.attributes("-alpha", 0.3); self.secim_penceresi.configure(bg='grey'); self.secim_penceresi.attributes("-topmost", True); self.secim_penceresi.focus_force(); self.secim_penceresi.bind("<Button-1>", self.on_mouse_press); self.secim_penceresi.bind("<B1-Motion>", self.on_mouse_drag); self.secim_penceresi.bind("<ButtonRelease-1>", self.on_mouse_release); self.secim_penceresi.bind("<Escape>", lambda e: self.secim_penceresi.destroy()); self.canvas = tk.Canvas(self.secim_penceresi, cursor="cross", bg="grey", highlightthickness=0); self.canvas.pack(fill="both", expand=True); self.rect = None; self.start_x = None; self.start_y = None; self.secilen_alan = {}
     def on_mouse_press(self, event): self.start_x = self.canvas.canvasx(event.x); self.start_y = self.canvas.canvasy(event.y); self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline='red', width=2)
@@ -126,7 +130,7 @@ class OverlayGUI:
     def run(self): self.root.mainloop()
 def start_gui(): global gui; gui = OverlayGUI(); gui.run()
 def main_translation_loop():
-    sct = mss.mss(); time.sleep(2)
+    sct = mss.mss(); translator = deepl.Translator(DEEPL_API_KEY)
     while True:
         if not is_paused:
             try:
@@ -136,20 +140,33 @@ def main_translation_loop():
                 global son_metin
                 if temiz_metin and temiz_metin != son_metin:
                     son_metin = temiz_metin
-                    try:
-                        cevirilmis = translator.translate_text(temiz_metin, target_lang=HEDEF_DIL)
+                    try: cevirilmis = translator.translate_text(temiz_metin, target_lang=HEDEF_DIL)
                     except Exception as e: cevirilmis = None
                     if gui and cevirilmis: gui.update_text(cevirilmis.text)
                 elif not temiz_metin and son_metin: son_metin = ""; gui.update_text("")
             except Exception as e: son_metin = ""; gui.update_text("")
         time.sleep(KONTROL_ARALIGI)
+
+# --- Ana Başlangıç Noktası ---
 if __name__ == "__main__":
+    ayarlari_yukle()
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_YOLU
     keyboard.add_hotkey(DURDUR_DEVAM_ET_TUSU, toggle_pause); keyboard.add_hotkey(PROGRAMI_KAPAT_TUSU, quit_program); keyboard.add_hotkey(ALAN_SEC_TUSU, alani_sec_ve_kaydet)
     gui_thread = threading.Thread(target=start_gui, daemon=True); gui_thread.start()
     translation_thread = threading.Thread(target=main_translation_loop, daemon=True); translation_thread.start()
     image = Image.open("icon.png")
-    tray_icon = pystray.Icon("Oyun Çeviri", image, "Oyun Çeviri Aracı")
+    tray_icon = pystray.Icon("app_name", image) # Başlık daha sonra güncellenecek
     update_tray_menu()
     if altyazi_bolgesi['width'] < 10 or altyazi_bolgesi['height'] < 10:
         is_paused = True; update_tray_menu()
+    
+    print(get_lang("console_loading_settings"))
+    print(get_lang("console_starting"))
+    print("--------------------------------------------------")
+    print(get_lang("console_controls_header"))
+    print(f"{DURDUR_DEVAM_ET_TUSU} {get_lang('console_hotkey_pause')}")
+    print(f"{PROGRAMI_KAPAT_TUSU} {get_lang('console_hotkey_exit')}")
+    print(f"{ALAN_SEC_TUSU} {get_lang('console_hotkey_select')}")
+    print("--------------------------------------------------")
+    
     tray_icon.run()

@@ -1,0 +1,17 @@
+{
+    "app_title": "Spiel-Untertitel-Übersetzer",
+    "menu_pause": "Pausieren",
+    "menu_resume": "Fortsetzen",
+    "menu_select_area": "Untertitelbereich auswählen",
+    "menu_target_language": "Zielsprache",
+    "menu_interface_language": "Oberflächensprache",
+    "menu_exit": "Beenden",
+    "console_loading_settings": "Einstellungen aus config.ini geladen.",
+    "console_starting": "Programm gestartet. UI wird geladen...",
+    "console_controls_header": "STEUERUNG:",
+    "console_hotkey_pause": "-> Übersetzung pausieren / fortsetzen",
+    "console_hotkey_exit": "-> Programm beenden",
+    "console_hotkey_select": "-> Untertitelbereich auswählen",
+    "console_status_paused": "ÜBERSETZUNG PAUSIERT",
+    "console_status_resumed": "ÜBERSETZUNG FORTGESETZT"
+}
