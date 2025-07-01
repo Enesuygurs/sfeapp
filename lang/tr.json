@@ -41,7 +41,8 @@
   "settings_start_on_launch": "Başlangıçta çeviriyi çalıştır",
   "error_title_invalid_value": "Geçersiz Değer",
   "error_body_opacity_range": "Şeffaflık değeri 0.1 ile 1.0 arasında olmalıdır.",
-  "error_body_opacity_invalid": "Şeffaflık için geçerli bir ondalıklı sayı girin.",
-  "error_body_font_color_invalid": "'{color}' geçerli bir font rengi değil.",
-  "error_body_bg_color_invalid": "'{color}' geçerli bir arka plan rengi değil."
+  "error_body_opacity_invalid": "Lütfen şeffaflık için geçerli bir ondalıklı sayı girin.",
+  "error_body_font_color_invalid": "'{color}' geçerli bir yazı tipi rengi değil.",
+  "error_body_bg_color_invalid": "'{color}' geçerli bir arka plan rengi değil.",
+  "info_settings_saved_body": "Ayarlar başarıyla kaydedildi."
 }

@@ -37,5 +37,12 @@
   "settings_button_browse": "Durchsuchen...",
   "settings_hotkey_info": "Drücken Sie eine Taste zur Zuweisung...",
   "info_restart_required_title": "Neustart Erforderlich",
-  "info_restart_required_body": "Damit die neuen Einstellungen wirksam werden, schließen Sie bitte die Anwendung und starten Sie sie neu."
+  "info_restart_required_body": "Damit die neuen Einstellungen wirksam werden, schließen Sie bitte die Anwendung und starten Sie sie neu.",
+  "settings_start_on_launch": "Übersetzung beim Start beginnen",
+  "error_title_invalid_value": "Ungültiger Wert",
+  "error_body_opacity_range": "Der Deckkraftwert muss zwischen 0,1 und 1,0 liegen.",
+  "error_body_opacity_invalid": "Bitte geben Sie eine gültige Dezimalzahl für die Deckkraft ein.",
+  "error_body_font_color_invalid": "'{color}' ist keine gültige Schriftfarbe.",
+  "error_body_bg_color_invalid": "'{color}' ist keine gültige Hintergrundfarbe.",
+  "info_settings_saved_body": "Einstellungen erfolgreich gespeichert."
 }

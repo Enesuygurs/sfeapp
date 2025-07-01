@@ -180,7 +180,7 @@ class AyarlarPenceresi(tk.Toplevel):
             print("Arayüz dili anında güncellendi.")
             
         ayarlari_kaydet()
-        messagebox.showinfo(get_lang('app_title'), "Ayarlar başarıyla kaydedildi.", parent=self)
+        messagebox.showinfo(get_lang('app_title'), get_lang('info_settings_saved_body'), parent=self)
         self.destroy()
 
 class AlanSecici(tk.Toplevel):

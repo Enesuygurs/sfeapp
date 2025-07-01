@@ -43,5 +43,6 @@
   "error_body_opacity_range": "Opacity value must be between 0.1 and 1.0.",
   "error_body_opacity_invalid": "Please enter a valid decimal number for opacity.",
   "error_body_font_color_invalid": "'{color}' is not a valid font color.",
-  "error_body_bg_color_invalid": "'{color}' is not a valid background color."
+  "error_body_bg_color_invalid": "'{color}' is not a valid background color.",
+  "info_settings_saved_body": "Settings saved successfully."
 }

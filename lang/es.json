@@ -37,5 +37,12 @@
   "settings_button_browse": "Explorar...",
   "settings_hotkey_info": "Presione una tecla para asignar...",
   "info_restart_required_title": "Se Requiere Reinicio",
-  "info_restart_required_body": "Para que los nuevos ajustes surtan efecto, por favor cierre y reinicie la aplicación."
+  "info_restart_required_body": "Para que los nuevos ajustes surtan efecto, por favor cierre y reinicie la aplicación.",
+  "settings_start_on_launch": "Iniciar traducción al arrancar",
+  "error_title_invalid_value": "Valor No Válido",
+  "error_body_opacity_range": "El valor de opacidad debe estar entre 0.1 y 1.0.",
+  "error_body_opacity_invalid": "Por favor, introduzca un número decimal válido para la opacidad.",
+  "error_body_font_color_invalid": "'{color}' no es un color de fuente válido.",
+  "error_body_bg_color_invalid": "'{color}' no es un color de fondo válido.",
+  "info_settings_saved_body": "Ajustes guardados correctamente."
 }

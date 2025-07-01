@@ -37,5 +37,12 @@
   "settings_button_browse": "Parcourir...",
   "settings_hotkey_info": "Appuyez sur une touche pour lier...",
   "info_restart_required_title": "Redémarrage Requis",
-  "info_restart_required_body": "Pour que les nouveaux paramètres prennent effet, veuillez fermer et redémarrer l'application."
+  "info_restart_required_body": "Pour que les nouveaux paramètres prennent effet, veuillez fermer et redémarrer l'application.",
+  "settings_start_on_launch": "Démarrer la traduction au lancement",
+  "error_title_invalid_value": "Valeur Invalide",
+  "error_body_opacity_range": "La valeur d'opacité doit être comprise entre 0.1 et 1.0.",
+  "error_body_opacity_invalid": "Veuillez saisir un nombre décimal valide pour l'opacité.",
+  "error_body_font_color_invalid": "'{color}' n'est pas une couleur de police valide.",
+  "error_body_bg_color_invalid": "'{color}' n'est pas une couleur de fond valide.",
+  "info_settings_saved_body": "Paramètres enregistrés avec succès."
 }
