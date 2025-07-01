@@ -141,6 +141,8 @@ class AyarlarPenceresi(tk.Toplevel):
         except tk.TclError: mevcut_renk = "#ffffff"
         renk = colorchooser.askcolor(title=get_lang('settings_color_picker_title'), initialcolor=mevcut_renk)
         if renk and renk[1]: var.set(renk[1])
+    
+    # GÜNCELLENDİ: kaydet metodu
     def kaydet(self):
         global AYARLAR
         try:
@@ -154,6 +156,7 @@ class AyarlarPenceresi(tk.Toplevel):
         except tk.TclError: messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_bg_color_invalid", color=yeni_bg_rengi), parent=self); return
         
         eski_ayarlar = AYARLAR.copy()
+        
         yeni_ayarlar = {
             'baslangicta_baslat': self.var_baslangicta_baslat.get(), 'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
             'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
@@ -161,14 +164,23 @@ class AyarlarPenceresi(tk.Toplevel):
             'ekran_ust_bosluk': self.var_ust_bosluk.get(), 'kontrol_araligi': self.var_kontrol_araligi.get(),
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
+        
         AYARLAR.update(yeni_ayarlar)
+        
+        # Anında uygulanacak değişiklikleri uygula
         if self.overlay.winfo_exists(): self.overlay.apply_settings()
+        
         yeni_kisayollar = (AYARLAR['durdur_devam_et'], AYARLAR['programi_kapat'], AYARLAR['alan_sec']); eski_kisayollar = (eski_ayarlar['durdur_devam_et'], eski_ayarlar['programi_kapat'], eski_ayarlar['alan_sec'])
         if yeni_kisayollar != eski_kisayollar:
             register_hotkeys(); print("Kısayollar anında güncellendi.")
-        ayarlari_kaydet()
+            
         if eski_ayarlar['arayuz_dili'] != AYARLAR['arayuz_dili']:
-            messagebox.showinfo(get_lang('info_restart_required_title'), "Arayüz dili değişikliğinin tam etkili olması için yeniden başlatma önerilir.", parent=self)
+            arayuz_dilini_yukle(AYARLAR['arayuz_dili'])
+            update_tray_menu()
+            print("Arayüz dili anında güncellendi.")
+            
+        ayarlari_kaydet()
+        messagebox.showinfo(get_lang('app_title'), "Ayarlar başarıyla kaydedildi.", parent=self)
         self.destroy()
 
 class AlanSecici(tk.Toplevel):
@@ -200,38 +212,17 @@ class OverlayGUI(tk.Toplevel):
 
 # --- BÖLÜM 4: KONTROL FONKSİYONLARI ---
 def register_hotkeys(): keyboard.unhook_all(); keyboard.add_hotkey(AYARLAR['durdur_devam_et'], toggle_pause); keyboard.add_hotkey(AYARLAR['programi_kapat'], quit_program); keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
-
-# DÜZELTME: toggle_pause fonksiyonu
 def toggle_pause(*args):
-    global is_paused, son_metin
-    is_paused = not is_paused
-    print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---")
-    update_tray_menu()
-    if is_paused:
-        son_metin = ""
-        gui_queue.put({'type': 'update_text', 'text': None})
-
+    global is_paused, son_metin; is_paused = not is_paused; print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---"); update_tray_menu()
+    if is_paused: son_metin = ""; gui_queue.put({'type': 'update_text', 'text': None})
 def quit_program(*args):
     print(f"{get_lang('menu_exit')}...");
     if tray_icon:
         tray_icon.stop()
-    gui_queue.put({'type': 'quit'})
-
 def alani_sec_ve_kaydet():
-    was_paused = is_paused
-    if not was_paused:
-        toggle_pause() # Alan seçimi sırasında çeviriyi duraklat
-    
+    was_paused = is_paused;
+    if not was_paused: toggle_pause()
     gui_queue.put({'type': 'open_selector'})
-    
-    # DÜZELTME: Alan seçimi sonrası otomatik devam et
-    # Bu mantık artık GuiManager içinde dolaylı olarak yönetiliyor,
-    # ama yine de başarılı bir seçimden sonra devam etmesini sağlayalım.
-    if was_paused == False: # Eğer program çalışıyorken bu işlemi başlattıysak
-        # Bu kısmı daha sonra iyileştirebiliriz, şimdilik basit tutalım.
-        # toggle_pause() # Başarılı seçimden sonra devam et
-        pass
-
 def ayarlari_penceresini_ac(): gui_queue.put({'type': 'open_settings'})
 def update_tray_menu():
     global tray_icon; pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
@@ -257,10 +248,8 @@ def main_translation_loop():
                     son_metin = temiz_metin
                     if translator:
                         try:
-                            # DÜZELTME: Son kapı kontrolü
                             if not is_paused:
                                 cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
-                                # İkinci kontrol, çeviri geldikten sonra hala pause değilsek gönder
                                 if not is_paused:
                                     gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
                         except Exception as e:
