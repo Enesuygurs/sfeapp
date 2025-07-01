@@ -6,16 +6,26 @@ import pystray
 from PIL import Image
 from functools import partial
 
-# --- (1. BÖLÜM: GLOBAL DEĞİŞKENLER VE AYAR YÖNETİMİ - DEĞİŞİKLİK YOK) ---
+# --------------------------------------------------------------------------------------
+# 1. BÖLÜM: GLOBAL DEĞİŞKENLER VE AYAR YÖNETİMİ
+# --------------------------------------------------------------------------------------
+
+# (Bu bölümde değişiklik yok)
 LANG_STRINGS = {}; DESTEKLENEN_ARAYUZ_DILLERI = {}; DESTEKLENEN_HEDEF_DILLER = {}
 CONFIG_DOSYASI = 'config.ini'
 config = configparser.ConfigParser()
 son_metin = ""; is_paused = False; gui = None; tray_icon = None; translator = None
 TESSERACT_YOLU, DEEPL_API_KEY, HEDEF_DIL_KODU, ARAYUZ_DILI_KODU = "", "", "", ""
-altyazi_bolgesi = {}; FONT_BOYUTU, FONT_RENGI, ARKA_PLAN_RENGI = "20", "white", "black"
+altyazi_bolgesi = {}
+FONT_BOYUTU, FONT_RENGI, ARKA_PLAN_RENGI = "20", "white", "black"
 SEFFAFLIK, EKRAN_UST_BOSLUK, KONTROL_ARALIGI = "0.7", "30", "0.5"
 DURDUR_DEVAM_ET_TUSU, PROGRAMI_KAPAT_TUSU, ALAN_SEC_TUSU = "f9", "f10", "f8"
 
+# --------------------------------------------------------------------------------------
+# 2. BÖLÜM: TÜM FONKSİYON VE SINIF TANIMLARI
+# --------------------------------------------------------------------------------------
+
+# (ayarlari_yukle, ayarlari_kaydet, AyarlarPenceresi vb. sınıflarda değişiklik yok)
 def get_lang(key): return LANG_STRINGS.get(key, key)
 def arayuz_dilini_yukle(dil_kodu):
     global LANG_STRINGS
@@ -45,20 +55,9 @@ def ayarlari_yukle():
     try: translator = deepl.Translator(DEEPL_API_KEY)
     except Exception as e: print(f"DeepL Translator oluşturulamadı: {e}."); translator = None
 
-# --------------------------------------------------------------------------------------
-# 2. BÖLÜM: UYGULAMA SINIFLARI VE FONKSİYONLARI
-# --------------------------------------------------------------------------------------
-
-# DÜZELTME: AyarlarPenceresi artık tk.Tk yerine tk.Toplevel'dan miras alacak.
-# Bu, onun kendi başına bir root pencere oluşturmasını engeller.
-class AyarlarPenceresi(tk.Toplevel):
-    def __init__(self, master): # Ana pencereyi (görünmez kök) parametre olarak alır
-        super().__init__(master)
-        self.title(get_lang('settings_window_title'))
-        self.resizable(False, False); self.attributes("-topmost", True); self.focus_force()
-        self.protocol("WM_DELETE_WINDOW", self.destroy) # Kapatma tuşuna basınca pencereyi yok et
-        
-        # Tkinter değişkenlerini oluştur ve DEĞERLERİNİ HEMEN ATA!
+class AyarlarPenceresi(ThemedTk):
+    def __init__(self):
+        super().__init__(theme="arc"); self.title(get_lang('settings_window_title')); self.resizable(False, False); self.attributes("-topmost", True); self.focus_force()
         self.var_tesseract = tk.StringVar(self, value=TESSERACT_YOLU); self.var_api_key = tk.StringVar(self, value=DEEPL_API_KEY)
         self.var_hedef_dil = tk.StringVar(self, value=get_key_from_value(DESTEKLENEN_HEDEF_DILLER, HEDEF_DIL_KODU))
         self.var_arayuz_dili = tk.StringVar(self, value=DESTEKLENEN_ARAYUZ_DILLERI.get(ARAYUZ_DILI_KODU))
@@ -66,22 +65,14 @@ class AyarlarPenceresi(tk.Toplevel):
         self.var_bg_rengi = tk.StringVar(self, value=ARKA_PLAN_RENGI); self.var_seffaflik = tk.StringVar(self, value=SEFFAFLIK)
         self.var_ust_bosluk = tk.StringVar(self, value=EKRAN_UST_BOSLUK); self.var_kontrol_araligi = tk.StringVar(self, value=KONTROL_ARALIGI)
         self.var_alan_sec = tk.StringVar(self, value=ALAN_SEC_TUSU); self.var_durdur_devam = tk.StringVar(self, value=DURDUR_DEVAM_ET_TUSU); self.var_kapat = tk.StringVar(self, value=PROGRAMI_KAPAT_TUSU)
-
-        # ... (Geri kalan tüm __init__ içeriği aynı) ...
         notebook = ttk.Notebook(self); notebook.pack(pady=10, padx=10, expand=True, fill="both")
-        genel_tab = self.create_tab(notebook, 'settings_tab_general')
-        arayuz_tab = self.create_tab(notebook, 'settings_tab_interface')
-        kisayollar_tab = self.create_tab(notebook, 'settings_tab_hotkeys')
-        self.populate_general_tab(genel_tab)
-        self.populate_interface_tab(arayuz_tab)
-        self.populate_hotkeys_tab(kisayollar_tab)
+        genel_tab = self.create_tab(notebook, 'settings_tab_general'); arayuz_tab = self.create_tab(notebook, 'settings_tab_interface'); kisayollar_tab = self.create_tab(notebook, 'settings_tab_hotkeys')
+        self.populate_general_tab(genel_tab); self.populate_interface_tab(arayuz_tab); self.populate_hotkeys_tab(kisayollar_tab)
         button_frame = ttk.Frame(self); button_frame.pack(padx=10, pady=(0, 10), fill='x')
         ttk.Button(button_frame, text=get_lang('settings_button_save'), command=self.kaydet).pack(side='right', padx=5)
         ttk.Button(button_frame, text=get_lang('settings_button_cancel'), command=self.destroy).pack(side='right')
-
     def create_tab(self, notebook, lang_key):
-        frame = ttk.Frame(notebook, padding="10"); notebook.add(frame, text=get_lang(lang_key))
-        return frame
+        frame = ttk.Frame(notebook, padding="10"); notebook.add(frame, text=get_lang(lang_key)); return frame
     def populate_general_tab(self, frame):
         ttk.Label(frame, text=get_lang('settings_tesseract_path')).grid(row=0, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_tesseract, width=40).grid(row=0, column=1, sticky='ew'); ttk.Button(frame, text=get_lang('settings_button_browse'), command=lambda: self.dosya_sec(self.var_tesseract)).grid(row=0, column=2, sticky='ew', padx=(5,0))
         ttk.Label(frame, text=get_lang('settings_deepl_api_key')).grid(row=1, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_api_key, width=50).grid(row=1, column=1, columnspan=2, sticky='ew')
@@ -124,74 +115,82 @@ class AyarlarPenceresi(tk.Toplevel):
 
 def ayarlari_penceresini_ac():
     def run_settings():
-        # DÜZELTME: Görünmez bir kök pencere oluştur ve AyarlarPenceresi'ne master olarak ver.
-        root = tk.Tk()
-        root.withdraw()
-        keyboard.unhook_all()
-        app = AyarlarPenceresi(root)
-        app.mainloop()
-        root.destroy() # İş bittiğinde kök pencereyi de yok et
-        register_hotkeys()
+        keyboard.unhook_all(); app = AyarlarPenceresi(); app.mainloop(); register_hotkeys()
     threading.Thread(target=run_settings).start()
 
 class AlanSecici:
-    # DÜZELTME: Bu sınıf da artık master pencere alacak
     def __init__(self, master):
-        self.master = master
-        self.secim_penceresi = tk.Toplevel(self.master); self.secim_penceresi.attributes("-fullscreen", True); self.secim_penceresi.attributes("-alpha", 0.3); self.secim_penceresi.configure(bg='grey'); self.secim_penceresi.attributes("-topmost", True); self.secim_penceresi.focus_force(); self.secim_penceresi.bind("<Button-1>", self.on_mouse_press); self.secim_penceresi.bind("<B1-Motion>", self.on_mouse_drag); self.secim_penceresi.bind("<ButtonRelease-1>", self.on_mouse_release); self.secim_penceresi.bind("<Escape>", lambda e: self.secim_penceresi.destroy()); self.canvas = tk.Canvas(self.secim_penceresi, cursor="cross", bg="grey", highlightthickness=0); self.canvas.pack(fill="both", expand=True); self.rect = None; self.start_x = None; self.start_y = None; self.secilen_alan = None
+        self.master = master; self.secim_penceresi = tk.Toplevel(self.master); self.secim_penceresi.attributes("-fullscreen", True); self.secim_penceresi.attributes("-alpha", 0.3); self.secim_penceresi.configure(bg='grey'); self.secim_penceresi.attributes("-topmost", True); self.secim_penceresi.focus_force(); self.secim_penceresi.bind("<Button-1>", self.on_mouse_press); self.secim_penceresi.bind("<B1-Motion>", self.on_mouse_drag); self.secim_penceresi.bind("<ButtonRelease-1>", self.on_mouse_release); self.secim_penceresi.bind("<Escape>", lambda e: self.secim_penceresi.destroy()); self.canvas = tk.Canvas(self.secim_penceresi, cursor="cross", bg="grey", highlightthickness=0); self.canvas.pack(fill="both", expand=True); self.rect = None; self.start_x = None; self.start_y = None; self.secilen_alan = None
     def on_mouse_press(self, event): self.start_x = self.canvas.canvasx(event.x); self.start_y = self.canvas.canvasy(event.y); self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline='red', width=2)
     def on_mouse_drag(self, event): self.canvas.coords(self.rect, self.start_x, self.start_y, self.canvas.canvasx(event.x), self.canvas.canvasy(event.y))
     def on_mouse_release(self, event): end_x = self.canvas.canvasx(event.x); end_y = self.canvas.canvasy(event.y); x1 = min(self.start_x, end_x); y1 = min(self.start_y, end_y); x2 = max(self.start_x, end_x); y2 = max(self.start_y, end_y); self.secilen_alan = {'top': str(y1), 'left': str(x1), 'width': str(x2 - x1), 'height': str(y2 - y1)}; self.secim_penceresi.destroy()
     def run(self): self.master.wait_window(self.secim_penceresi); return self.secilen_alan
     
 class OverlayGUI(tk.Toplevel):
-    def __init__(self, master): # DÜZELTME: Bu sınıf da master alacak
+    def __init__(self, master):
         super().__init__(master)
-        seffaflik = float(SEFFAFLIK); bg_rengi = ARKA_PLAN_RENGI
-        font_boyutu = int(FONT_BOYUTU); font_rengi = FONT_RENGI
+        seffaflik = float(SEFFAFLIK); bg_rengi = ARKA_PLAN_RENGI; font_boyutu = int(FONT_BOYUTU); font_rengi = FONT_RENGI
         self.overrideredirect(True); self.wm_attributes("-topmost", True); self.wm_attributes("-alpha", seffaflik); self.config(bg=bg_rengi); self.screen_width = self.winfo_screenwidth(); self.label = tk.Label(self, text="", font=("Arial", font_boyutu, "bold"), fg=font_rengi, bg=bg_rengi, wraplength=self.screen_width * 0.8, justify="center", padx=15, pady=10); self.label.pack()
-        self.update_text(None) # Başlangıçta gizle
+        self.update_text(None)
     def update_text(self, text):
-        ust_bosluk = int(EKRAN_UST_BOSLUK)
-        if not text: self.withdraw(); return # hide
-        self.deiconify() # show
-        self.label.config(text=text); self.update_idletasks(); width = self.label.winfo_reqwidth(); height = self.label.winfo_reqheight(); x = (self.screen_width // 2) - (width // 2); y = ust_bosluk; self.geometry(f"{width}x{height}+{x}+{y}")
+        if not text: self.withdraw(); return
+        self.deiconify()
+        self.label.config(text=text); self.update_idletasks(); width = self.label.winfo_reqwidth(); height = self.label.winfo_reqheight(); x = (self.screen_width // 2) - (width // 2); y = int(EKRAN_UST_BOSLUK); self.geometry(f"{width}x{height}+{x}+{y}")
 
 def register_hotkeys(): keyboard.unhook_all(); keyboard.add_hotkey(DURDUR_DEVAM_ET_TUSU, toggle_pause); keyboard.add_hotkey(PROGRAMI_KAPAT_TUSU, quit_program); keyboard.add_hotkey(ALAN_SEC_TUSU, alani_sec_ve_kaydet)
-def toggle_pause(*args): global is_paused; is_paused = not is_paused; print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---"); update_tray_menu()
+
+# DÜZELTME 1: toggle_pause fonksiyonu güncellendi
+def toggle_pause(*args):
+    global is_paused, son_metin
+    is_paused = not is_paused
+    print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---")
+    update_tray_menu()
+    # Eğer duraklatılıyorsa ve GUI varsa, metni temizle
+    if is_paused and gui and gui.winfo_exists():
+        son_metin = "" # Son metin hafızasını da temizle
+        gui.update_text(None)
+
 def quit_program(*args): print(f"{get_lang('menu_exit')}..."); 
 if tray_icon: tray_icon.stop(); os._exit(0)
 def hedef_dili_degistir(dil_kodu, *args):
-    global HEDEF_DIL_KODU;
+    global HEDEF_DIL_KODU
     if HEDEF_DIL_KODU != dil_kodu: HEDEF_DIL_KODU = dil_kodu; ayarlari_kaydet(); update_tray_menu()
 def arayuz_dilini_degistir(dil_kodu, *args):
-    global ARAYUZ_DILI_KODU;
+    global ARAYUZ_DILI_KODU
     if ARAYUZ_DILI_KODU != dil_kodu: ARAYUZ_DILI_KODU = dil_kodu; arayuz_dilini_yukle(dil_kodu); ayarlari_kaydet(); update_tray_menu(); messagebox.showinfo(get_lang('info_restart_required_title'), get_lang('info_restart_required_body'))
 def alani_sec_ve_kaydet():
     global altyazi_bolgesi, is_paused; was_paused = is_paused
     if not was_paused: toggle_pause()
     def do_selection():
-        root = tk.Tk(); root.withdraw() # Görünmez kök pencere
+        root = tk.Tk(); root.withdraw()
         keyboard.unhook_all(); secici = AlanSecici(root); secilen_alan = secici.run(); register_hotkeys()
+        root.destroy()
         if secilen_alan and int(secilen_alan['width']) > 10:
             altyazi_bolgesi.update(secilen_alan); ayarlari_kaydet()
             if is_paused: toggle_pause()
         elif not was_paused: toggle_pause()
-        root.destroy()
     threading.Thread(target=do_selection).start()
 
+# DÜZELTME 2: update_tray_menu fonksiyonu sadeleştirildi
 def update_tray_menu():
-    global tray_icon; pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
-    hedef_dil_items = [item(dil_adi, partial(hedef_dili_degistir, dil_kodu), checked=lambda item, k=dil_kodu: HEDEF_DIL_KODU == k, radio=True) for dil_adi, dil_kodu in DESTEKLENEN_HEDEF_DILLER.items()]
-    arayuz_dil_items = [item(dil_adi, partial(arayuz_dilini_degistir, dil_kodu), checked=lambda item, k=dil_kodu: ARAYUZ_DILI_KODU == k, radio=True) for dil_kodu, dil_adi in DESTEKLENEN_ARAYUZ_DILLERI.items()]
-    new_menu = menu(item(pause_text, toggle_pause), item(get_lang('menu_select_area'), alani_sec_ve_kaydet), item(get_lang('menu_settings'), ayarlari_penceresini_ac), item(get_lang('menu_target_language'), menu(*hedef_dil_items)), item(get_lang('menu_interface_language'), menu(*arayuz_dil_items)), item(get_lang('menu_exit'), quit_program))
-    if tray_icon: tray_icon.title = get_lang('app_title'); tray_icon.menu = new_menu
+    global tray_icon
+    pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
+    
+    # Dil menüleri kaldırıldı
+    new_menu = menu(
+        item(pause_text, toggle_pause),
+        item(get_lang('menu_select_area'), alani_sec_ve_kaydet),
+        item(get_lang('menu_settings'), ayarlari_penceresini_ac),
+        menu.SEPARATOR, # Ayırıcı çizgi
+        item(get_lang('menu_exit'), quit_program)
+    )
+    if tray_icon:
+        tray_icon.title = get_lang('app_title')
+        tray_icon.menu = new_menu
 
 def start_gui():
     global gui
-    # DÜZELTME: Ana GUI döngüsü için de görünmez bir kök oluştur
-    root = tk.Tk()
-    root.withdraw()
+    root = tk.Tk(); root.withdraw()
     gui = OverlayGUI(root)
     root.mainloop()
 
@@ -214,7 +213,7 @@ def main_translation_loop():
                     if translator:
                         try: cevirilmis = translator.translate_text(temiz_metin, target_lang=HEDEF_DIL_KODU)
                         except Exception as e: print(f"Çeviri hatası: {e}"); cevirilmis = None
-                        if gui and gui.winfo_exists(): gui.update_text(cevirilmis.text if cevirilmis else "")
+                        if gui and gui.winfo_exists(): gui.update_text(cevirilmis.text if cevirilmis else "[Çeviri Hatası]")
                 elif not temiz_metin and son_metin:
                     son_metin = ""
                     if gui and gui.winfo_exists(): gui.update_text("")
@@ -241,5 +240,4 @@ if __name__ == "__main__":
     print("--------------------------------------------------")
     
     tray_icon.run()
-    # Programın temizce kapandığından emin olmak için son bir çıkış komutu
-    os._exit(0)
+    os._exit(0) # Programın temizce kapandığından emin ol
