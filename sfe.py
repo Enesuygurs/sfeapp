@@ -110,13 +110,11 @@ class AyarlarPenceresi(tk.Toplevel):
         frame = ttk.Frame(self.notebook, padding="10"); self.notebook.add(frame, text=get_lang(lang_key)); return frame
     def populate_general_tab(self, frame):
         ttk.Label(frame, text=get_lang('settings_tesseract_path')).grid(row=0, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_tesseract, width=40).grid(row=0, column=1, sticky='ew'); ttk.Button(frame, text=get_lang('settings_button_browse'), command=lambda: self.dosya_sec(self.var_tesseract)).grid(row=0, column=2, sticky='ew', padx=(5,0))
-        # YENİ: API anahtarı kutusu artık şifreli
         ttk.Label(frame, text=get_lang('settings_deepl_api_key')).grid(row=1, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_api_key, width=50, show="*").grid(row=1, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_target_language')).grid(row=2, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_hedef_dil, values=list(DESTEKLENEN_HEDEF_DILLER.keys()), state="readonly").grid(row=2, column=1, sticky='ew', columnspan=2)
         ttk.Label(frame, text=get_lang('settings_interface_language')).grid(row=3, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_arayuz_dili, values=list(DESTEKLENEN_ARAYUZ_DILLERI.values()), state="readonly").grid(row=3, column=1, sticky='ew', columnspan=2)
         ttk.Checkbutton(frame, text=get_lang('settings_start_on_launch'), variable=self.var_baslangicta_baslat).grid(row=4, column=0, columnspan=3, sticky='w', pady=(10,0))
     def populate_interface_tab(self, frame):
-        for widget in frame.winfo_children(): widget.destroy()
         ttk.Label(frame, text=get_lang('settings_font_size')).grid(row=0, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_font_boyutu, validate="key", validatecommand=self.validate_integer).grid(row=0, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_font_color')).grid(row=1, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_font_rengi, width=40).grid(row=1, column=1, sticky='ew'); ttk.Button(frame, text="...", command=lambda v=self.var_font_rengi: self.renk_sec(v), width=3).grid(row=1, column=2, sticky='ew', padx=(5,0))
         ttk.Label(frame, text=get_lang('settings_bg_color')).grid(row=2, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_bg_rengi, width=40).grid(row=2, column=1, sticky='ew'); ttk.Button(frame, text="...", command=lambda v=self.var_bg_rengi: self.renk_sec(v), width=3).grid(row=2, column=2, sticky='ew', padx=(5,0))
@@ -124,7 +122,6 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Label(frame, text=get_lang('settings_top_margin')).grid(row=4, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_ust_bosluk, validate="key", validatecommand=self.validate_integer).grid(row=4, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_scan_interval')).grid(row=5, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_kontrol_araligi, validate="key", validatecommand=self.validate_float).grid(row=5, column=1, columnspan=2, sticky='ew')
     def populate_hotkeys_tab(self, frame):
-        for widget in frame.winfo_children(): widget.destroy()
         self.create_hotkey_entry(frame, 'settings_hotkey_select', self.var_alan_sec, 0); self.create_hotkey_entry(frame, 'settings_hotkey_pause', self.var_durdur_devam, 1); self.create_hotkey_entry(frame, 'settings_hotkey_exit', self.var_kapat, 2)
         ttk.Label(frame, text=get_lang('settings_hotkey_info'), style='TLabel').grid(row=3, column=0, columnspan=3, sticky='w', pady=(10,0))
     def create_hotkey_entry(self, parent, lang_key, var, row):
@@ -136,22 +133,14 @@ class AyarlarPenceresi(tk.Toplevel):
             if event.event_type == keyboard.KEY_DOWN: var.set(event.name)
         except: pass
     def dosya_sec(self, var):
-        filepath = filedialog.askopenfilename(title="Tesseract.exe Seç", filetypes=[("Executable", "*.exe")])
+        filepath = filedialog.askopenfilename(title="Tesseract.exe Seç", filetypes=[("Executable", "*.exe")]);
         if filepath: var.set(filepath)
-    # DÜZELTME 1: renk_sec metodu
     def renk_sec(self, var):
         mevcut_renk = var.get()
-        try:
-            # Önce mevcut rengin geçerli olup olmadığını kontrol et
-            self.winfo_rgb(mevcut_renk)
-        except tk.TclError:
-            # Geçerli değilse, varsayılan bir renkle aç
-            mevcut_renk = "#ffffff"
-        
+        try: self.winfo_rgb(mevcut_renk)
+        except tk.TclError: mevcut_renk = "#ffffff"
         renk = colorchooser.askcolor(title=get_lang('settings_color_picker_title'), initialcolor=mevcut_renk)
-        if renk and renk[1]:
-            var.set(renk[1])
-    
+        if renk and renk[1]: var.set(renk[1])
     def kaydet(self):
         global AYARLAR
         try:
@@ -165,7 +154,6 @@ class AyarlarPenceresi(tk.Toplevel):
         except tk.TclError: messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_bg_color_invalid", color=yeni_bg_rengi), parent=self); return
         
         eski_ayarlar = AYARLAR.copy()
-        
         yeni_ayarlar = {
             'baslangicta_baslat': self.var_baslangicta_baslat.get(), 'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
             'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
@@ -173,21 +161,14 @@ class AyarlarPenceresi(tk.Toplevel):
             'ekran_ust_bosluk': self.var_ust_bosluk.get(), 'kontrol_araligi': self.var_kontrol_araligi.get(),
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
-        
         AYARLAR.update(yeni_ayarlar)
         if self.overlay.winfo_exists(): self.overlay.apply_settings()
-        
-        if eski_ayarlar['arayuz_dili'] != AYARLAR['arayuz_dili']:
-            arayuz_dilini_yukle(AYARLAR['arayuz_dili'])
-            update_tray_menu()
-            messagebox.showinfo(get_lang('info_restart_required_title'), "Arayüz dili değiştirildi.", parent=self)
-
-        yeni_kisayollar = (AYARLAR['durdur_devam_et'], AYARLAR['programi_kapat'], AYARLAR['alan_sec'])
-        eski_kisayollar = (eski_ayarlar['durdur_devam_et'], eski_ayarlar['programi_kapat'], eski_ayarlar['alan_sec'])
+        yeni_kisayollar = (AYARLAR['durdur_devam_et'], AYARLAR['programi_kapat'], AYARLAR['alan_sec']); eski_kisayollar = (eski_ayarlar['durdur_devam_et'], eski_ayarlar['programi_kapat'], eski_ayarlar['alan_sec'])
         if yeni_kisayollar != eski_kisayollar:
             register_hotkeys(); print("Kısayollar anında güncellendi.")
-
         ayarlari_kaydet()
+        if eski_ayarlar['arayuz_dili'] != AYARLAR['arayuz_dili']:
+            messagebox.showinfo(get_lang('info_restart_required_title'), "Arayüz dili değişikliğinin tam etkili olması için yeniden başlatma önerilir.", parent=self)
         self.destroy()
 
 class AlanSecici(tk.Toplevel):
@@ -199,8 +180,8 @@ class AlanSecici(tk.Toplevel):
         if not self.start_x: self.destroy(); return
         end_x = self.canvas.canvasx(event.x); end_y = self.canvas.canvasy(event.y)
         x1 = int(min(self.start_x, end_x)); y1 = int(min(self.start_y, end_y)); x2 = int(max(self.start_x, end_x)); y2 = int(max(self.start_y, end_y))
-        AYARLAR.update({'top': str(y1), 'left': str(x1), 'width': str(x2 - x1), 'height': str(y2 - y1)}); self.destroy()
-    def run(self): self.master.wait_window(self)
+        self.secilen_alan = {'top': str(y1), 'left': str(x1), 'width': str(x2 - x1), 'height': str(y2 - y1)}; self.destroy()
+    def run(self): self.master.wait_window(self); return self.secilen_alan
 
 class OverlayGUI(tk.Toplevel):
     def __init__(self, master):
@@ -226,10 +207,12 @@ def quit_program(*args):
     print(f"{get_lang('menu_exit')}...");
     if tray_icon: tray_icon.stop()
     gui_queue.put({'type': 'quit'})
+# DÜZELTME: alani_sec_ve_kaydet fonksiyonu
 def alani_sec_ve_kaydet():
-    was_paused = is_paused;
-    if not was_paused: toggle_pause()
+    # Bu fonksiyon artık sadece GUI thread'ine bir mesaj gönderiyor.
+    # Gerçek işlevi GUI thread'i içinde gerçekleşecek.
     gui_queue.put({'type': 'open_selector'})
+
 def ayarlari_penceresini_ac(): gui_queue.put({'type': 'open_settings'})
 def update_tray_menu():
     global tray_icon; pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
