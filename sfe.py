@@ -23,7 +23,7 @@ def arayuz_dilini_yukle(dil_kodu):
         with open("lang/en.json", 'r', encoding='utf-8') as f: LANG_STRINGS = json.load(f)
 def get_key_from_value(dictionary, value): return next((k for k, v in dictionary.items() if v == value), None)
 def ayarlari_kaydet():
-    config['Genel'] = { 'tesseract_yolu': AYARLAR['tesseract_yolu'], 'api_anahtari': AYARLAR['api_anahtari'], 'arayuz_dili': AYARLAR['arayuz_dili'], 'hedef_dil': AYARLAR['hedef_dil'] }
+    config['Genel'] = { 'tesseract_yolu': AYARLAR['tesseract_yolu'], 'api_anahtari': AYARLAR['api_anahtari'], 'arayuz_dili': AYARLAR['arayuz_dili'], 'hedef_dil': AYARLAR['hedef_dil'], 'baslangicta_baslat': str(AYARLAR['baslangicta_baslat']) }
     config['Bolge'] = {k: str(v) for k, v in AYARLAR.items() if k in ['top', 'left', 'width', 'height']}
     config['Arayuz'] = { 'font_boyutu': AYARLAR['font_boyutu'], 'font_rengi': AYARLAR['font_rengi'], 'arka_plan_rengi': AYARLAR['arka_plan_rengi'], 'seffaflik': AYARLAR['seffaflik'], 'ekran_ust_bosluk': AYARLAR['ekran_ust_bosluk'], 'kontrol_araligi': AYARLAR['kontrol_araligi'] }
     config['Kisayollar'] = { 'alan_sec': AYARLAR['alan_sec'], 'durdur_devam_et': AYARLAR['durdur_devam_et'], 'programi_kapat': AYARLAR['programi_kapat'] }
@@ -34,6 +34,7 @@ def ayarlari_yukle():
     with open('arayuz_dilleri.json', 'r', encoding='utf-8') as f: DESTEKLENEN_ARAYUZ_DILLERI = json.load(f)
     config.read(CONFIG_DOSYASI, encoding='utf-8')
     AYARLAR = {
+        'baslangicta_baslat': config.getboolean('Genel', 'baslangicta_baslat', fallback=True),
         'arayuz_dili': config.get('Genel', 'arayuz_dili', fallback='TR'),'tesseract_yolu': config.get('Genel', 'tesseract_yolu', fallback=''),
         'api_anahtari': config.get('Genel', 'api_anahtari', fallback=''),'hedef_dil': config.get('Genel', 'hedef_dil', fallback='TR'),
         'top': config.get('Bolge', 'top', fallback='0'), 'left': config.get('Bolge', 'left', fallback='0'),
@@ -59,8 +60,6 @@ class GuiManager:
         self.overlay = OverlayGUI(self.root)
         self.root.after(100, self.process_queue)
         self.root.mainloop()
-        print("GUI mainloop bitti.") # Hata ayıklama için
-
     def process_queue(self):
         try:
             message = gui_queue.get(0)
@@ -70,10 +69,6 @@ class GuiManager:
             elif msg_type == 'open_selector': AlanSecici(self.root)
             elif msg_type == 'show_message_info': messagebox.showinfo(message.get('title'), message.get('body'))
             elif msg_type == 'show_message_error': messagebox.showerror(message.get('title'), message.get('body'))
-            elif msg_type == 'quit': # DÜZELTME: Kapanma komutu
-                self.root.quit()
-                self.root.destroy()
-                return # after'ı tekrar çağırma
         except queue.Empty: pass
         self.root.after(100, self.process_queue)
 
@@ -84,6 +79,7 @@ class AyarlarPenceresi(tk.Toplevel):
             icon_path = get_resource_path('icon.png'); self.photo = tk.PhotoImage(file=icon_path); self.iconphoto(False, self.photo)
         except Exception as e: print(f"icon.png yüklenemedi: {e}")
         self.validate_integer = (self.register(self.sadece_sayi), '%P'); self.validate_float = (self.register(self.sadece_ondalikli), '%P')
+        self.var_baslangicta_baslat = tk.BooleanVar(self, value=AYARLAR['baslangicta_baslat'])
         self.var_tesseract = tk.StringVar(self, value=AYARLAR['tesseract_yolu']); self.var_api_key = tk.StringVar(self, value=AYARLAR['api_anahtari'])
         self.var_hedef_dil = tk.StringVar(self, value=get_key_from_value(DESTEKLENEN_HEDEF_DILLER, AYARLAR['hedef_dil']))
         self.var_arayuz_dili = tk.StringVar(self, value=DESTEKLENEN_ARAYUZ_DILLERI.get(AYARLAR['arayuz_dili']))
@@ -97,7 +93,6 @@ class AyarlarPenceresi(tk.Toplevel):
         button_frame = ttk.Frame(self); button_frame.pack(padx=10, pady=(0, 10), fill='x')
         ttk.Button(button_frame, text=get_lang('settings_button_save'), command=self.kaydet).pack(side='right', padx=5)
         ttk.Button(button_frame, text=get_lang('settings_button_cancel'), command=self.destroy).pack(side='right')
-
     def sadece_sayi(self, val): return val.isdigit() or val == ""
     def sadece_ondalikli(self, val):
         if val == "" or val == ".": return True
@@ -110,6 +105,7 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Label(frame, text=get_lang('settings_deepl_api_key')).grid(row=1, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_api_key, width=50).grid(row=1, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_target_language')).grid(row=2, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_hedef_dil, values=list(DESTEKLENEN_HEDEF_DILLER.keys()), state="readonly").grid(row=2, column=1, sticky='ew', columnspan=2)
         ttk.Label(frame, text=get_lang('settings_interface_language')).grid(row=3, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_arayuz_dili, values=list(DESTEKLENEN_ARAYUZ_DILLERI.values()), state="readonly").grid(row=3, column=1, sticky='ew', columnspan=2)
+        ttk.Checkbutton(frame, text=get_lang('settings_start_on_launch'), variable=self.var_baslangicta_baslat).grid(row=4, column=0, columnspan=3, sticky='w', pady=(10,0))
     def populate_interface_tab(self, frame):
         ttk.Label(frame, text=get_lang('settings_font_size')).grid(row=0, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_font_boyutu, validate="key", validatecommand=self.validate_integer).grid(row=0, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_font_color')).grid(row=1, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_font_rengi, width=40).grid(row=1, column=1, sticky='ew'); ttk.Button(frame, text="...", command=lambda v=self.var_font_rengi: self.renk_sec(v), width=3).grid(row=1, column=2, sticky='ew', padx=(5,0))
@@ -129,38 +125,20 @@ class AyarlarPenceresi(tk.Toplevel):
             if event.event_type == keyboard.KEY_DOWN: var.set(event.name)
         except: pass
     def dosya_sec(self, var): filepath = filedialog.askopenfilename(title="Tesseract.exe Seç", filetypes=[("Executable", "*.exe")]);
-    # DÜZELTME: renk_sec fonksiyonu
-    def renk_sec(self, var):
-        # askcolor, (rgb_tuple, hex_string) şeklinde bir tuple döndürür
-        renk = colorchooser.askcolor(title=get_lang('settings_color_picker_title'))
-        if renk and renk[1]: # Eğer bir renk seçildiyse ve hex değeri varsa
-            var.set(renk[1]) # StringVar'ı güncelle
-    # DÜZELTME: kaydet metodu
+    def renk_sec(self, var): color_code = colorchooser.askcolor(title=get_lang('settings_color_picker_title'));
     def kaydet(self):
         global AYARLAR
-        # Adım 1: Değerleri al ve doğrula
         try:
             seffaflik_degeri = float(self.var_seffaflik.get())
-            if not (0.1 <= seffaflik_degeri <= 1.0):
-                messagebox.showerror("Geçersiz Değer", "Şeffaflık değeri 0.1 ile 1.0 arasında olmalıdır.", parent=self); return
-        except ValueError:
-            messagebox.showerror("Geçersiz Değer", "Şeffaflık için geçerli bir ondalıklı sayı girin.", parent=self); return
-        
-        yeni_font_rengi = self.var_font_rengi.get()
-        yeni_bg_rengi = self.var_bg_rengi.get()
-
-        try:
-            self.winfo_rgb(yeni_font_rengi)
-        except tk.TclError:
-            messagebox.showerror("Geçersiz Değer", f"'{yeni_font_rengi}' geçerli bir font rengi değil.", parent=self); return
-        
-        try:
-            self.winfo_rgb(yeni_bg_rengi)
-        except tk.TclError:
-            messagebox.showerror("Geçersiz Değer", f"'{yeni_bg_rengi}' geçerli bir arka plan rengi değil.", parent=self); return
-
-        # Adım 2: Tüm kontrollerden geçtiyse, ayarları güncelle
+            if not (0.1 <= seffaflik_degeri <= 1.0): messagebox.showerror("Geçersiz Değer", "Şeffaflık değeri 0.1 ile 1.0 arasında olmalıdır.", parent=self); return
+        except ValueError: messagebox.showerror("Geçersiz Değer", "Şeffaflık için geçerli bir ondalıklı sayı girin.", parent=self); return
+        yeni_font_rengi = self.var_font_rengi.get(); yeni_bg_rengi = self.var_bg_rengi.get()
+        try: self.winfo_rgb(yeni_font_rengi)
+        except tk.TclError: messagebox.showerror("Geçersiz Değer", f"'{yeni_font_rengi}' geçerli bir font rengi değil.", parent=self); return
+        try: self.winfo_rgb(yeni_bg_rengi)
+        except tk.TclError: messagebox.showerror("Geçersiz Değer", f"'{yeni_bg_rengi}' geçerli bir arka plan rengi değil.", parent=self); return
         yeni_ayarlar = {
+            'baslangicta_baslat': self.var_baslangicta_baslat.get(),
             'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
             'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
             'font_boyutu': self.var_font_boyutu.get(), 'font_rengi': yeni_font_rengi, 'arka_plan_rengi': yeni_bg_rengi, 'seffaflik': self.var_seffaflik.get(),
@@ -168,9 +146,7 @@ class AyarlarPenceresi(tk.Toplevel):
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
         yeniden_baslat_gerekli = any([ AYARLAR['tesseract_yolu'] != yeni_ayarlar['tesseract_yolu'], AYARLAR['api_anahtari'] != yeni_ayarlar['api_anahtari'], AYARLAR['arayuz_dili'] != yeni_ayarlar['arayuz_dili'] ])
-        AYARLAR.update(yeni_ayarlar)
-        self.overlay.apply_settings()
-        ayarlari_kaydet()
+        AYARLAR.update(yeni_ayarlar); self.overlay.apply_settings(); ayarlari_kaydet()
         if yeniden_baslat_gerekli:
             messagebox.showinfo(get_lang('info_restart_required_title'), get_lang('info_restart_required_body'), parent=self)
         self.destroy()
@@ -186,7 +162,7 @@ class AlanSecici(tk.Toplevel):
         x1 = int(min(self.start_x, end_x)); y1 = int(min(self.start_y, end_y)); x2 = int(max(self.start_x, end_x)); y2 = int(max(self.start_y, end_y))
         self.secilen_alan = {'top': str(y1), 'left': str(x1), 'width': str(x2 - x1), 'height': str(y2 - y1)}; self.destroy()
     def run(self): self.master.wait_window(self); return self.secilen_alan
-    
+
 class OverlayGUI(tk.Toplevel):
     def __init__(self, master):
         super().__init__(master); self.overrideredirect(True); self.wm_attributes("-topmost", True)
@@ -202,7 +178,6 @@ class OverlayGUI(tk.Toplevel):
         width = self.label.winfo_reqwidth(); height = self.label.winfo_reqheight()
         x = (self.screen_width // 2) - (width // 2); y = int(AYARLAR['ekran_ust_bosluk']); self.geometry(f"{width}x{height}+{x}+{y}")
 
-# --- BÖLÜM 3: KONTROL FONKSİYONLARI ---
 def register_hotkeys(): keyboard.unhook_all(); keyboard.add_hotkey(AYARLAR['durdur_devam_et'], toggle_pause); keyboard.add_hotkey(AYARLAR['programi_kapat'], quit_program); keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
 def toggle_pause(*args):
     global is_paused, son_metin; is_paused = not is_paused; print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---"); update_tray_menu()
@@ -211,9 +186,9 @@ def toggle_pause(*args):
 # DÜZELTME: quit_program fonksiyonu
 def quit_program(*args):
     print(f"{get_lang('menu_exit')}...");
-    gui_queue.put({'type': 'quit'}) # Önce GUI thread'ine kapanma komutu gönder
     if tray_icon:
-        tray_icon.stop() # Sonra pystray'i durdur
+        tray_icon.stop()
+    # os._exit(0) çağrısı ana bloğun sonuna taşındı.
 
 def hedef_dili_degistir(dil_kodu, *args):
     if AYARLAR['hedef_dil'] != dil_kodu: AYARLAR['hedef_dil'] = dil_kodu; ayarlari_kaydet(); update_tray_menu()
@@ -229,7 +204,6 @@ def update_tray_menu():
     new_menu = menu(item(pause_text, toggle_pause), item(get_lang('menu_select_area'), alani_sec_ve_kaydet), item(get_lang('menu_settings'), ayarlari_penceresini_ac), menu.SEPARATOR, item(get_lang('menu_exit'), quit_program))
     if tray_icon: tray_icon.title = get_lang('app_title'); tray_icon.menu = new_menu
 
-# --- BÖLÜM 4: ANA DÖNGÜLER ---
 def main_translation_loop():
     sct = mss.mss()
     while True:
@@ -258,16 +232,26 @@ def main_translation_loop():
 # --- ANA PROGRAM BAŞLANGIÇ NOKTASI ---
 if __name__ == "__main__":
     ayarlari_yukle()
-    gui_manager_thread = threading.Thread(target=GuiManager)
+    
+    # DÜZELTME: Başlangıç durumu kontrolünü thread'ler başlamadan önce yap
+    if not AYARLAR['baslangicta_baslat']:
+        is_paused = True
+    elif int(AYARLAR['width']) < 10 or int(AYARLAR['height']) < 10:
+        is_paused = True
+        
+    gui_manager_thread = threading.Thread(target=GuiManager, daemon=True) # GUI thread'i daemon olmalı
     gui_manager_thread.start()
+    
     register_hotkeys()
     translation_thread = threading.Thread(target=main_translation_loop, daemon=True)
     translation_thread.start()
+    
     image = Image.open(get_resource_path("icon.png"))
     tray_icon = pystray.Icon(get_lang("app_title"), image, menu=menu())
-    update_tray_menu()
-    if int(AYARLAR['width']) < 10 or int(AYARLAR['height']) < 10:
-        is_paused = True; update_tray_menu()
+    
+    # Başlangıçta menüyü doğru halde göstermek için çağır
+    update_tray_menu() 
+    
     print(f"--- {get_lang('app_title')} ---"); print(get_lang("console_loading_settings"))
     print("--------------------------------------------------")
     print(get_lang("console_controls_header"))
@@ -277,4 +261,7 @@ if __name__ == "__main__":
     print("--------------------------------------------------")
     
     tray_icon.run() # Bu satır, quit_program'da stop() çağrılana kadar bekler.
-    os._exit(0) # Tray icon durduktan sonra her ihtimale karşı programdan çık.
+    
+    # DÜZELTME: Tray icon durduktan sonra programın tamamen kapanmasını garantile
+    print("Çıkış yapılıyor...")
+    os._exit(0)

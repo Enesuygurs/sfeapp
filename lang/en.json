@@ -37,5 +37,6 @@
   "settings_button_browse": "Browse...",
   "settings_hotkey_info": "Press a key to bind...",
   "info_restart_required_title": "Restart Required",
-  "info_restart_required_body": "For the new settings to take effect, please close and restart the application."
+  "info_restart_required_body": "For the new settings to take effect, please close and restart the application.",
+  "settings_start_on_launch": "Start translation on launch"
 }

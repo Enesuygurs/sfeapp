@@ -37,5 +37,6 @@
   "settings_button_browse": "Gözat...",
   "settings_hotkey_info": "Atamak için bir tuşa basın...",
   "info_restart_required_title": "Yeniden Başlatma Gerekli",
-  "info_restart_required_body": "Yeni ayarların etkili olması için lütfen uygulamayı kapatıp yeniden başlatın."
+  "info_restart_required_body": "Yeni ayarların etkili olması için lütfen uygulamayı kapatıp yeniden başlatın.",
+  "settings_start_on_launch": "Başlangıçta çeviriyi çalıştır"
 }
