@@ -135,21 +135,42 @@ class AyarlarPenceresi(tk.Toplevel):
         renk = colorchooser.askcolor(title=get_lang('settings_color_picker_title'))
         if renk and renk[1]: # Eğer bir renk seçildiyse ve hex değeri varsa
             var.set(renk[1]) # StringVar'ı güncelle
+    # DÜZELTME: kaydet metodu
     def kaydet(self):
         global AYARLAR
+        # Adım 1: Değerleri al ve doğrula
         try:
             seffaflik_degeri = float(self.var_seffaflik.get())
-            if not (0.1 <= seffaflik_degeri <= 1.0): messagebox.showerror("Hata", "Şeffaflık değeri 0.1 ile 1.0 arasında olmalıdır.", parent=self); return
-        except ValueError: messagebox.showerror("Hata", "Şeffaflık için geçerli bir ondalıklı sayı girin.", parent=self); return
+            if not (0.1 <= seffaflik_degeri <= 1.0):
+                messagebox.showerror("Geçersiz Değer", "Şeffaflık değeri 0.1 ile 1.0 arasında olmalıdır.", parent=self); return
+        except ValueError:
+            messagebox.showerror("Geçersiz Değer", "Şeffaflık için geçerli bir ondalıklı sayı girin.", parent=self); return
+        
+        yeni_font_rengi = self.var_font_rengi.get()
+        yeni_bg_rengi = self.var_bg_rengi.get()
+
+        try:
+            self.winfo_rgb(yeni_font_rengi)
+        except tk.TclError:
+            messagebox.showerror("Geçersiz Değer", f"'{yeni_font_rengi}' geçerli bir font rengi değil.", parent=self); return
+        
+        try:
+            self.winfo_rgb(yeni_bg_rengi)
+        except tk.TclError:
+            messagebox.showerror("Geçersiz Değer", f"'{yeni_bg_rengi}' geçerli bir arka plan rengi değil.", parent=self); return
+
+        # Adım 2: Tüm kontrollerden geçtiyse, ayarları güncelle
         yeni_ayarlar = {
             'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
             'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
-            'font_boyutu': self.var_font_boyutu.get(), 'font_rengi': self.var_font_rengi.get(), 'arka_plan_rengi': self.var_bg_rengi.get(), 'seffaflik': self.var_seffaflik.get(),
+            'font_boyutu': self.var_font_boyutu.get(), 'font_rengi': yeni_font_rengi, 'arka_plan_rengi': yeni_bg_rengi, 'seffaflik': self.var_seffaflik.get(),
             'ekran_ust_bosluk': self.var_ust_bosluk.get(), 'kontrol_araligi': self.var_kontrol_araligi.get(),
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
         yeniden_baslat_gerekli = any([ AYARLAR['tesseract_yolu'] != yeni_ayarlar['tesseract_yolu'], AYARLAR['api_anahtari'] != yeni_ayarlar['api_anahtari'], AYARLAR['arayuz_dili'] != yeni_ayarlar['arayuz_dili'] ])
-        AYARLAR.update(yeni_ayarlar); self.overlay.apply_settings(); ayarlari_kaydet()
+        AYARLAR.update(yeni_ayarlar)
+        self.overlay.apply_settings()
+        ayarlari_kaydet()
         if yeniden_baslat_gerekli:
             messagebox.showinfo(get_lang('info_restart_required_title'), get_lang('info_restart_required_body'), parent=self)
         self.destroy()
