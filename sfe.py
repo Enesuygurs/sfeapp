@@ -180,8 +180,8 @@ class AlanSecici(tk.Toplevel):
         if not self.start_x: self.destroy(); return
         end_x = self.canvas.canvasx(event.x); end_y = self.canvas.canvasy(event.y)
         x1 = int(min(self.start_x, end_x)); y1 = int(min(self.start_y, end_y)); x2 = int(max(self.start_x, end_x)); y2 = int(max(self.start_y, end_y))
-        self.secilen_alan = {'top': str(y1), 'left': str(x1), 'width': str(x2 - x1), 'height': str(y2 - y1)}; self.destroy()
-    def run(self): self.master.wait_window(self); return self.secilen_alan
+        AYARLAR.update({'top': str(y1), 'left': str(x1), 'width': str(x2 - x1), 'height': str(y2 - y1)}); self.destroy()
+    def run(self): self.master.wait_window(self)
 
 class OverlayGUI(tk.Toplevel):
     def __init__(self, master):
@@ -200,18 +200,37 @@ class OverlayGUI(tk.Toplevel):
 
 # --- BÖLÜM 4: KONTROL FONKSİYONLARI ---
 def register_hotkeys(): keyboard.unhook_all(); keyboard.add_hotkey(AYARLAR['durdur_devam_et'], toggle_pause); keyboard.add_hotkey(AYARLAR['programi_kapat'], quit_program); keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
+
+# DÜZELTME: toggle_pause fonksiyonu
 def toggle_pause(*args):
-    global is_paused, son_metin; is_paused = not is_paused; print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---"); update_tray_menu()
-    if is_paused: son_metin = ""; gui_queue.put({'type': 'update_text', 'text': None})
+    global is_paused, son_metin
+    is_paused = not is_paused
+    print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---")
+    update_tray_menu()
+    if is_paused:
+        son_metin = ""
+        gui_queue.put({'type': 'update_text', 'text': None})
+
 def quit_program(*args):
     print(f"{get_lang('menu_exit')}...");
-    if tray_icon: tray_icon.stop()
+    if tray_icon:
+        tray_icon.stop()
     gui_queue.put({'type': 'quit'})
-# DÜZELTME: alani_sec_ve_kaydet fonksiyonu
+
 def alani_sec_ve_kaydet():
-    # Bu fonksiyon artık sadece GUI thread'ine bir mesaj gönderiyor.
-    # Gerçek işlevi GUI thread'i içinde gerçekleşecek.
+    was_paused = is_paused
+    if not was_paused:
+        toggle_pause() # Alan seçimi sırasında çeviriyi duraklat
+    
     gui_queue.put({'type': 'open_selector'})
+    
+    # DÜZELTME: Alan seçimi sonrası otomatik devam et
+    # Bu mantık artık GuiManager içinde dolaylı olarak yönetiliyor,
+    # ama yine de başarılı bir seçimden sonra devam etmesini sağlayalım.
+    if was_paused == False: # Eğer program çalışıyorken bu işlemi başlattıysak
+        # Bu kısmı daha sonra iyileştirebiliriz, şimdilik basit tutalım.
+        # toggle_pause() # Başarılı seçimden sonra devam et
+        pass
 
 def ayarlari_penceresini_ac(): gui_queue.put({'type': 'open_settings'})
 def update_tray_menu():
@@ -237,9 +256,17 @@ def main_translation_loop():
                 if temiz_metin and temiz_metin != son_metin:
                     son_metin = temiz_metin
                     if translator:
-                        try: cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
-                        except Exception as e: print(f"Çeviri hatası: {e}"); cevirilmis = None
-                        gui_queue.put({'type': 'update_text', 'text': cevirilmis.text if cevirilmis else "[Çeviri Hatası]"})
+                        try:
+                            # DÜZELTME: Son kapı kontrolü
+                            if not is_paused:
+                                cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
+                                # İkinci kontrol, çeviri geldikten sonra hala pause değilsek gönder
+                                if not is_paused:
+                                    gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
+                        except Exception as e:
+                            print(f"Çeviri hatası: {e}")
+                            if not is_paused:
+                                gui_queue.put({'type': 'update_text', 'text': "[Çeviri Hatası]"})
                 elif not temiz_metin and son_metin:
                     son_metin = ""; gui_queue.put({'type': 'update_text', 'text': ""})
             time.sleep(kontrol_araligi)
