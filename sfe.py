@@ -7,14 +7,13 @@ from PIL import Image
 from functools import partial
 import queue
 
-# --- BÖLÜM 1: GLOBAL DEĞİŞKENLER VE AYAR YÖNETİMİ ---
+# --- (Bölüm 1 ve temel fonksiyonlar aynı) ---
 LANG_STRINGS = {}; DESTEKLENEN_ARAYUZ_DILLERI = {}; DESTEKLENEN_HEDEF_DILLER = {}
 CONFIG_DOSYASI = 'config.ini'; config = configparser.ConfigParser()
 son_metin = ""; is_paused = False; tray_icon = None; translator = None
 AYARLAR = {}
 gui_queue = queue.Queue()
 
-# --- (Fonksiyonlar: get_lang, arayuz_dilini_yukle, get_key_from_value, ayarlari_kaydet, ayarlari_yukle - DEĞİŞİKLİK YOK) ---
 def get_lang(key): return LANG_STRINGS.get(key, key)
 def arayuz_dilini_yukle(dil_kodu):
     global LANG_STRINGS
@@ -49,8 +48,6 @@ def ayarlari_yukle():
     pytesseract.pytesseract.tesseract_cmd = AYARLAR['tesseract_yolu']
     try: translator = deepl.Translator(AYARLAR['api_anahtari'])
     except Exception as e: print(f"DeepL Translator oluşturulamadı: {e}."); translator = None
-
-# --- BÖLÜM 2: UYGULAMA SINIFLARI ---
 def get_resource_path(relative_path):
     try: base_path = sys._MEIPASS
     except Exception: base_path = os.path.abspath(".")
@@ -58,37 +55,34 @@ def get_resource_path(relative_path):
 
 class GuiManager:
     def __init__(self):
-        # DÜZELTME: Kök pencere artık ThemedTk, bu temayı tüm alt pencerelere aktarır.
-        self.root = ThemedTk(theme="arc")
-        self.root.withdraw()
+        self.root = ThemedTk(theme="arc"); self.root.withdraw()
         self.overlay = OverlayGUI(self.root)
         self.root.after(100, self.process_queue)
         self.root.mainloop()
+        print("GUI mainloop bitti.") # Hata ayıklama için
 
     def process_queue(self):
         try:
             message = gui_queue.get(0)
-            if message['type'] == 'update_text':
-                self.overlay.update_text(message['text'])
-            elif message['type'] == 'open_settings':
-                AyarlarPenceresi(self.root)
-            elif message['type'] == 'open_selector':
-                AlanSecici(self.root)
-            elif message['type'] == 'show_message_info':
-                 messagebox.showinfo(message['title'], message['body'])
-            elif message['type'] == 'show_message_error':
-                 messagebox.showerror(message['title'], message['body'])
-        except queue.Empty:
-            pass
+            msg_type = message.get('type')
+            if msg_type == 'update_text': self.overlay.update_text(message.get('text'))
+            elif msg_type == 'open_settings': AyarlarPenceresi(self.root, self.overlay)
+            elif msg_type == 'open_selector': AlanSecici(self.root)
+            elif msg_type == 'show_message_info': messagebox.showinfo(message.get('title'), message.get('body'))
+            elif msg_type == 'show_message_error': messagebox.showerror(message.get('title'), message.get('body'))
+            elif msg_type == 'quit': # DÜZELTME: Kapanma komutu
+                self.root.quit()
+                self.root.destroy()
+                return # after'ı tekrar çağırma
+        except queue.Empty: pass
         self.root.after(100, self.process_queue)
 
 class AyarlarPenceresi(tk.Toplevel):
-    def __init__(self, master):
-        super().__init__(master); self.title(get_lang('settings_window_title')); self.resizable(False, False); self.attributes("-topmost", True); self.transient(master); self.grab_set()
+    def __init__(self, master, overlay_ref):
+        super().__init__(master); self.overlay = overlay_ref; self.title(get_lang('settings_window_title')); self.resizable(False, False); self.attributes("-topmost", True); self.transient(master); self.grab_set()
         try:
             icon_path = get_resource_path('icon.png'); self.photo = tk.PhotoImage(file=icon_path); self.iconphoto(False, self.photo)
         except Exception as e: print(f"icon.png yüklenemedi: {e}")
-        # ... (Geri kalan kod aynı)
         self.validate_integer = (self.register(self.sadece_sayi), '%P'); self.validate_float = (self.register(self.sadece_ondalikli), '%P')
         self.var_tesseract = tk.StringVar(self, value=AYARLAR['tesseract_yolu']); self.var_api_key = tk.StringVar(self, value=AYARLAR['api_anahtari'])
         self.var_hedef_dil = tk.StringVar(self, value=get_key_from_value(DESTEKLENEN_HEDEF_DILLER, AYARLAR['hedef_dil']))
@@ -127,37 +121,40 @@ class AyarlarPenceresi(tk.Toplevel):
         self.create_hotkey_entry(frame, 'settings_hotkey_select', self.var_alan_sec, 0); self.create_hotkey_entry(frame, 'settings_hotkey_pause', self.var_durdur_devam, 1); self.create_hotkey_entry(frame, 'settings_hotkey_exit', self.var_kapat, 2)
         ttk.Label(frame, text=get_lang('settings_hotkey_info'), style='TLabel').grid(row=3, column=0, columnspan=3, sticky='w', pady=(10,0))
     def create_hotkey_entry(self, parent, lang_key, var, row):
-        ttk.Label(parent, text=get_lang(lang_key)).grid(row=row, column=0, sticky='w', pady=2)
-        entry = ttk.Entry(parent, textvariable=var, state="readonly", justify='center'); entry.grid(row=row, column=1, sticky='ew', pady=2, columnspan=2)
-        entry.bind("<Button-1>", lambda e, v=var: self.dinlemeyi_baslat(v))
+        ttk.Label(parent, text=get_lang(lang_key)).grid(row=row, column=0, sticky='w', pady=2); entry = ttk.Entry(parent, textvariable=var, state="readonly", justify='center'); entry.grid(row=row, column=1, sticky='ew', pady=2, columnspan=2); entry.bind("<Button-1>", lambda e, v=var: self.dinlemeyi_baslat(v))
     def dinlemeyi_baslat(self, var):
         var.set("..."); self.update_idletasks()
         try:
             event = keyboard.read_event(suppress=True)
             if event.event_type == keyboard.KEY_DOWN: var.set(event.name)
         except: pass
-    def dosya_sec(self, var):
-        filepath = filedialog.askopenfilename(title="Tesseract.exe Seç", filetypes=[("Executable", "*.exe")]);
-        if filepath: var.set(filepath)
+    def dosya_sec(self, var): filepath = filedialog.askopenfilename(title="Tesseract.exe Seç", filetypes=[("Executable", "*.exe")]);
+    # DÜZELTME: renk_sec fonksiyonu
     def renk_sec(self, var):
-        color_code = colorchooser.askcolor(title=get_lang('settings_color_picker_title'));
-        if color_code and color_code[1]: var.set(color_code[1])
+        # askcolor, (rgb_tuple, hex_string) şeklinde bir tuple döndürür
+        renk = colorchooser.askcolor(title=get_lang('settings_color_picker_title'))
+        if renk and renk[1]: # Eğer bir renk seçildiyse ve hex değeri varsa
+            var.set(renk[1]) # StringVar'ı güncelle
     def kaydet(self):
         global AYARLAR
         try:
             seffaflik_degeri = float(self.var_seffaflik.get())
             if not (0.1 <= seffaflik_degeri <= 1.0): messagebox.showerror("Hata", "Şeffaflık değeri 0.1 ile 1.0 arasında olmalıdır.", parent=self); return
         except ValueError: messagebox.showerror("Hata", "Şeffaflık için geçerli bir ondalıklı sayı girin.", parent=self); return
-        AYARLAR.update({
+        yeni_ayarlar = {
             'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
             'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
             'font_boyutu': self.var_font_boyutu.get(), 'font_rengi': self.var_font_rengi.get(), 'arka_plan_rengi': self.var_bg_rengi.get(), 'seffaflik': self.var_seffaflik.get(),
             'ekran_ust_bosluk': self.var_ust_bosluk.get(), 'kontrol_araligi': self.var_kontrol_araligi.get(),
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
-        }); ayarlari_kaydet(); messagebox.showinfo(get_lang('info_restart_required_title'), get_lang('info_restart_required_body'), parent=self); self.destroy()
+        }
+        yeniden_baslat_gerekli = any([ AYARLAR['tesseract_yolu'] != yeni_ayarlar['tesseract_yolu'], AYARLAR['api_anahtari'] != yeni_ayarlar['api_anahtari'], AYARLAR['arayuz_dili'] != yeni_ayarlar['arayuz_dili'] ])
+        AYARLAR.update(yeni_ayarlar); self.overlay.apply_settings(); ayarlari_kaydet()
+        if yeniden_baslat_gerekli:
+            messagebox.showinfo(get_lang('info_restart_required_title'), get_lang('info_restart_required_body'), parent=self)
+        self.destroy()
 
 class AlanSecici(tk.Toplevel):
-    # ... (Bu sınıf aynı, değişiklik yok)
     def __init__(self, master):
         super().__init__(master); self.attributes("-fullscreen", True); self.attributes("-alpha", 0.3); self.configure(bg='grey'); self.attributes("-topmost", True); self.focus_force(); self.bind("<Button-1>", self.on_mouse_press); self.bind("<B1-Motion>", self.on_mouse_drag); self.bind("<ButtonRelease-1>", self.on_mouse_release); self.bind("<Escape>", lambda e: self.destroy()); self.canvas = tk.Canvas(self, cursor="cross", bg="grey", highlightthickness=0); self.canvas.pack(fill="both", expand=True); self.rect = None; self.start_x = None; self.start_y = None; self.secilen_alan = None
     def on_mouse_press(self, event): self.start_x = self.canvas.canvasx(event.x); self.start_y = self.canvas.canvasy(event.y); self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline='red', width=2)
@@ -170,28 +167,42 @@ class AlanSecici(tk.Toplevel):
     def run(self): self.master.wait_window(self); return self.secilen_alan
     
 class OverlayGUI(tk.Toplevel):
-    # ... (Bu sınıf aynı, değişiklik yok)
     def __init__(self, master):
-        super().__init__(master); self.overrideredirect(True); self.wm_attributes("-topmost", True); self.wm_attributes("-alpha", float(AYARLAR['seffaflik'])); self.config(bg=AYARLAR['arka_plan_rengi']); self.screen_width = self.winfo_screenwidth(); self.label = tk.Label(self, text="", font=("Arial", int(AYARLAR['font_boyutu']), "bold"), fg=AYARLAR['font_rengi'], bg=AYARLAR['arka_plan_rengi'], wraplength=self.screen_width * 0.8, justify="center", padx=15, pady=10); self.label.pack(); self.withdraw()
+        super().__init__(master); self.overrideredirect(True); self.wm_attributes("-topmost", True)
+        self.screen_width = self.winfo_screenwidth()
+        self.label = tk.Label(self, text="", wraplength=self.screen_width * 0.8, justify="center", padx=15, pady=10); self.label.pack()
+        self.apply_settings(); self.withdraw()
+    def apply_settings(self):
+        self.wm_attributes("-alpha", float(AYARLAR['seffaflik'])); self.config(bg=AYARLAR['arka_plan_rengi'])
+        self.label.config(font=("Arial", int(AYARLAR['font_boyutu']), "bold"), fg=AYARLAR['font_rengi'], bg=AYARLAR['arka_plan_rengi'])
     def update_text(self, text):
         if not text: self.withdraw(); return
-        self.deiconify(); self.label.config(text=text); self.update_idletasks(); width = self.label.winfo_reqwidth(); height = self.label.winfo_reqheight(); x = (self.screen_width // 2) - (width // 2); y = int(AYARLAR['ekran_ust_bosluk']); self.geometry(f"{width}x{height}+{x}+{y}")
+        self.deiconify(); self.label.config(text=text); self.update_idletasks()
+        width = self.label.winfo_reqwidth(); height = self.label.winfo_reqheight()
+        x = (self.screen_width // 2) - (width // 2); y = int(AYARLAR['ekran_ust_bosluk']); self.geometry(f"{width}x{height}+{x}+{y}")
 
 # --- BÖLÜM 3: KONTROL FONKSİYONLARI ---
 def register_hotkeys(): keyboard.unhook_all(); keyboard.add_hotkey(AYARLAR['durdur_devam_et'], toggle_pause); keyboard.add_hotkey(AYARLAR['programi_kapat'], quit_program); keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
 def toggle_pause(*args):
     global is_paused, son_metin; is_paused = not is_paused; print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---"); update_tray_menu()
     if is_paused: son_metin = ""; gui_queue.put({'type': 'update_text', 'text': None})
+
+# DÜZELTME: quit_program fonksiyonu
 def quit_program(*args):
     print(f"{get_lang('menu_exit')}...");
+    gui_queue.put({'type': 'quit'}) # Önce GUI thread'ine kapanma komutu gönder
     if tray_icon:
-        tray_icon.stop()
+        tray_icon.stop() # Sonra pystray'i durdur
+
+def hedef_dili_degistir(dil_kodu, *args):
+    if AYARLAR['hedef_dil'] != dil_kodu: AYARLAR['hedef_dil'] = dil_kodu; ayarlari_kaydet(); update_tray_menu()
+def arayuz_dilini_degistir(dil_kodu, *args):
+    if AYARLAR['arayuz_dili'] != dil_kodu: AYARLAR['arayuz_dili'] = dil_kodu; arayuz_dilini_yukle(dil_kodu); ayarlari_kaydet(); update_tray_menu(); gui_queue.put({'type': 'show_message_info', 'title': get_lang('info_restart_required_title'), 'body': get_lang('info_restart_required_body')})
 def alani_sec_ve_kaydet():
     was_paused = is_paused;
     if not was_paused: toggle_pause()
     gui_queue.put({'type': 'open_selector'})
-def ayarlari_penceresini_ac():
-    keyboard.unhook_all(); gui_queue.put({'type': 'open_settings'})
+def ayarlari_penceresini_ac(): keyboard.unhook_all(); gui_queue.put({'type': 'open_settings'})
 def update_tray_menu():
     global tray_icon; pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
     new_menu = menu(item(pause_text, toggle_pause), item(get_lang('menu_select_area'), alani_sec_ve_kaydet), item(get_lang('menu_settings'), ayarlari_penceresini_ac), menu.SEPARATOR, item(get_lang('menu_exit'), quit_program))
@@ -204,11 +215,10 @@ def main_translation_loop():
         try:
             kontrol_araligi = float(AYARLAR['kontrol_araligi'])
             if not is_paused:
-                # ... (Bu döngü aynı, değişiklik yok)
                 if not os.path.exists(AYARLAR['tesseract_yolu']):
                     if not is_paused: toggle_pause()
                     gui_queue.put({'type': 'show_message_error', 'title': get_lang('error_tesseract_path_title'), 'body': get_lang('error_tesseract_path_body')}); gui_queue.put({'type': 'open_settings'}); continue
-                bolge = {k: int(v) for k, v in AYARLAR.items() if k in ['top', 'left', 'width', 'height']}
+                bolge = { 'top': int(AYARLAR['top']), 'left': int(AYARLAR['left']), 'width': int(AYARLAR['width']), 'height': int(AYARLAR['height']) }
                 ekran_goruntusu = sct.grab(bolge); img = np.array(ekran_goruntusu); gri_img = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
                 _, islenmis_img = cv2.threshold(gri_img, 180, 255, cv2.THRESH_BINARY_INV)
                 metin = pytesseract.image_to_string(islenmis_img, lang='eng'); temiz_metin = metin.strip().replace('\n', ' ')
@@ -227,7 +237,7 @@ def main_translation_loop():
 # --- ANA PROGRAM BAŞLANGIÇ NOKTASI ---
 if __name__ == "__main__":
     ayarlari_yukle()
-    gui_manager_thread = threading.Thread(target=GuiManager, daemon=True)
+    gui_manager_thread = threading.Thread(target=GuiManager)
     gui_manager_thread.start()
     register_hotkeys()
     translation_thread = threading.Thread(target=main_translation_loop, daemon=True)
@@ -246,5 +256,4 @@ if __name__ == "__main__":
     print("--------------------------------------------------")
     
     tray_icon.run() # Bu satır, quit_program'da stop() çağrılana kadar bekler.
-    # Döngü bittiğinde, daemon thread'ler de otomatik olarak kapanacaktır.
-    print("Program sonlandırıldı.")
+    os._exit(0) # Tray icon durduktan sonra her ihtimale karşı programdan çık.
