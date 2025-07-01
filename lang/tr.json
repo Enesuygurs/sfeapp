@@ -38,5 +38,10 @@
   "settings_hotkey_info": "Atamak için bir tuşa basın...",
   "info_restart_required_title": "Yeniden Başlatma Gerekli",
   "info_restart_required_body": "Yeni ayarların etkili olması için lütfen uygulamayı kapatıp yeniden başlatın.",
-  "settings_start_on_launch": "Başlangıçta çeviriyi çalıştır"
+  "settings_start_on_launch": "Başlangıçta çeviriyi çalıştır",
+  "error_title_invalid_value": "Geçersiz Değer",
+  "error_body_opacity_range": "Şeffaflık değeri 0.1 ile 1.0 arasında olmalıdır.",
+  "error_body_opacity_invalid": "Şeffaflık için geçerli bir ondalıklı sayı girin.",
+  "error_body_font_color_invalid": "'{color}' geçerli bir font rengi değil.",
+  "error_body_bg_color_invalid": "'{color}' geçerli bir arka plan rengi değil."
 }
