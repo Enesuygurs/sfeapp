@@ -34,6 +34,8 @@
   "settings_hotkey_exit": "Exit:",
   "settings_button_save": "Save and Close",
   "settings_button_cancel": "Cancel",
+  "settings_button_browse": "Browse...",
+  "settings_hotkey_info": "Press a key to bind...",
   "info_restart_required_title": "Restart Required",
   "info_restart_required_body": "For the new settings to take effect, please close and restart the application."
 }
