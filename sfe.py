@@ -67,7 +67,12 @@ def toggle_pause(*args):
     update_tray_menu();
     if is_paused and gui: gui.update_text("")
 
-def quit_program(*args): os._exit(0)
+def quit_program(*args):
+    if tray_icon:
+        tray_icon.stop()
+    # GUI'yi ana thread'den kapatmak daha güvenlidir, bu yüzden doğrudan çağırmayalım.
+    # os._exit zaten her şeyi kapatacaktır.
+    os._exit(0)
 
 def update_tray_menu():
     global tray_icon
