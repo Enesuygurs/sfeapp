@@ -53,7 +53,7 @@ def ayarlari_yukle():
     arayuz_dilini_yukle(AYARLAR['arayuz_dili'])
     pytesseract.pytesseract.tesseract_cmd = AYARLAR['tesseract_yolu']
     try: translator = deepl.Translator(AYARLAR['api_anahtari'])
-    except Exception as e: print(f"DeepL Translator oluşturulamadı: {e}."); translator = None
+    except Exception as e: print(f"HATA: DeepL Translator oluşturulamadı: {e}. API Anahtarı geçersiz olabilir."); translator = None
 def get_resource_path(relative_path):
     try: base_path = sys._MEIPASS
     except Exception: base_path = os.path.abspath(".")
@@ -84,7 +84,7 @@ class AyarlarPenceresi(tk.Toplevel):
         super().__init__(master); self.overlay = overlay_ref; self.title(get_lang('settings_window_title')); self.resizable(False, False); self.attributes("-topmost", True); self.transient(master); self.grab_set()
         try:
             icon_path = get_resource_path('icon.png'); self.photo = tk.PhotoImage(file=icon_path); self.iconphoto(False, self.photo)
-        except Exception as e: print(f"icon.png yüklenemedi: {e}")
+        except Exception as e: print(f"HATA: icon.png yüklenemedi: {e}")
         self.validate_integer = (self.register(self.sadece_sayi), '%P'); self.validate_float = (self.register(self.sadece_ondalikli), '%P')
         self.var_baslangicta_baslat = tk.BooleanVar(self, value=AYARLAR['baslangicta_baslat'])
         self.var_tesseract = tk.StringVar(self, value=AYARLAR['tesseract_yolu']); self.var_api_key = tk.StringVar(self, value=AYARLAR['api_anahtari'])
@@ -141,8 +141,6 @@ class AyarlarPenceresi(tk.Toplevel):
         except tk.TclError: mevcut_renk = "#ffffff"
         renk = colorchooser.askcolor(title=get_lang('settings_color_picker_title'), initialcolor=mevcut_renk)
         if renk and renk[1]: var.set(renk[1])
-    
-    # GÜNCELLENDİ: kaydet metodu
     def kaydet(self):
         global AYARLAR
         try:
@@ -156,7 +154,6 @@ class AyarlarPenceresi(tk.Toplevel):
         except tk.TclError: messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_bg_color_invalid", color=yeni_bg_rengi), parent=self); return
         
         eski_ayarlar = AYARLAR.copy()
-        
         yeni_ayarlar = {
             'baslangicta_baslat': self.var_baslangicta_baslat.get(), 'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
             'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
@@ -164,24 +161,14 @@ class AyarlarPenceresi(tk.Toplevel):
             'ekran_ust_bosluk': self.var_ust_bosluk.get(), 'kontrol_araligi': self.var_kontrol_araligi.get(),
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
-        
         AYARLAR.update(yeni_ayarlar)
-        
-        # Anında uygulanacak değişiklikleri uygula
         if self.overlay.winfo_exists(): self.overlay.apply_settings()
-        
         yeni_kisayollar = (AYARLAR['durdur_devam_et'], AYARLAR['programi_kapat'], AYARLAR['alan_sec']); eski_kisayollar = (eski_ayarlar['durdur_devam_et'], eski_ayarlar['programi_kapat'], eski_ayarlar['alan_sec'])
-        if yeni_kisayollar != eski_kisayollar:
-            register_hotkeys(); print("Kısayollar anında güncellendi.")
-            
+        if yeni_kisayollar != eski_kisayollar: register_hotkeys()
         if eski_ayarlar['arayuz_dili'] != AYARLAR['arayuz_dili']:
-            arayuz_dilini_yukle(AYARLAR['arayuz_dili'])
-            update_tray_menu()
-            print("Arayüz dili anında güncellendi.")
-            
-        ayarlari_kaydet()
-        messagebox.showinfo(get_lang('app_title'), get_lang('info_settings_saved_body'), parent=self)
-        self.destroy()
+            arayuz_dilini_yukle(AYARLAR['arayuz_dili']); update_tray_menu()
+        
+        ayarlari_kaydet(); messagebox.showinfo(get_lang('app_title'), get_lang('info_settings_saved_body'), parent=self); self.destroy()
 
 class AlanSecici(tk.Toplevel):
     def __init__(self, master):
@@ -213,12 +200,13 @@ class OverlayGUI(tk.Toplevel):
 # --- BÖLÜM 4: KONTROL FONKSİYONLARI ---
 def register_hotkeys(): keyboard.unhook_all(); keyboard.add_hotkey(AYARLAR['durdur_devam_et'], toggle_pause); keyboard.add_hotkey(AYARLAR['programi_kapat'], quit_program); keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
 def toggle_pause(*args):
-    global is_paused, son_metin; is_paused = not is_paused; print(f"\n--- {get_lang('console_status_paused') if is_paused else get_lang('console_status_resumed')} ---"); update_tray_menu()
-    if is_paused: son_metin = ""; gui_queue.put({'type': 'update_text', 'text': None})
+    global is_paused, son_metin; is_paused = not is_paused
+    gui_queue.put({'type': 'update_text', 'text': None})
+    if is_paused: son_metin = ""
+    update_tray_menu()
 def quit_program(*args):
-    print(f"{get_lang('menu_exit')}...");
-    if tray_icon:
-        tray_icon.stop()
+    if tray_icon: tray_icon.stop()
+    gui_queue.put({'type': 'quit'})
 def alani_sec_ve_kaydet():
     was_paused = is_paused;
     if not was_paused: toggle_pause()
@@ -253,13 +241,12 @@ def main_translation_loop():
                                 if not is_paused:
                                     gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
                         except Exception as e:
-                            print(f"Çeviri hatası: {e}")
                             if not is_paused:
                                 gui_queue.put({'type': 'update_text', 'text': "[Çeviri Hatası]"})
                 elif not temiz_metin and son_metin:
                     son_metin = ""; gui_queue.put({'type': 'update_text', 'text': ""})
             time.sleep(kontrol_araligi)
-        except Exception as e: print(f"Ana döngü hatası: {e}"); time.sleep(2)
+        except Exception as e: time.sleep(2)
 
 # --- ANA PROGRAM BAŞLANGIÇ NOKTASI ---
 if __name__ == "__main__":
@@ -278,14 +265,6 @@ if __name__ == "__main__":
     tray_icon = pystray.Icon(get_lang("app_title"), image, menu=menu())
     
     update_tray_menu()
-    
-    print(f"--- {get_lang('app_title')} ---"); print(get_lang("console_loading_settings"))
-    print("--------------------------------------------------")
-    print(get_lang("console_controls_header"))
-    print(f"{AYARLAR['durdur_devam_et']} -> {get_lang('console_hotkey_pause')}")
-    print(f"{AYARLAR['programi_kapat']} -> {get_lang('console_hotkey_exit')}")
-    print(f"{AYARLAR['alan_sec']} -> {get_lang('console_hotkey_select')}")
-    print("--------------------------------------------------")
     
     tray_icon.run()
     os._exit(0)
