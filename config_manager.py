@@ -48,11 +48,11 @@ def arayuz_dilini_yukle(dil_kodu):
 def ayarlari_kaydet():
     """Mevcut AYARLAR sözlüğünü config.ini dosyasına yazar."""
     config['Genel'] = {
-        'tesseract_yolu': AYARLAR['tesseract_yolu'],
         'api_anahtari': AYARLAR['api_anahtari'],
         'arayuz_dili': AYARLAR['arayuz_dili'],
         'hedef_dil': AYARLAR['hedef_dil'],
-        'baslangicta_baslat': str(AYARLAR['baslangicta_baslat'])
+        'baslangicta_baslat': str(AYARLAR['baslangicta_baslat']),
+        'gpu_kullan': str(AYARLAR['gpu_kullan'])
     }
     config['Bolge'] = {
         'top': str(AYARLAR['top']),
@@ -67,8 +67,8 @@ def ayarlari_kaydet():
         'seffaflik': str(AYARLAR['seffaflik']),
         'ekran_ust_bosluk': str(AYARLAR['ekran_ust_bosluk']),
         'kontrol_araligi': str(AYARLAR['kontrol_araligi']),
-        'ceviri_omru': str(AYARLAR['ceviri_omru']), # YENİ AYAR
-        'benzerlik_orani_esigi': str(AYARLAR['benzerlik_orani_esigi']) # YENİ AYAR
+        'ceviri_omru': str(AYARLAR['ceviri_omru']),
+        'benzerlik_orani_esigi': str(AYARLAR['benzerlik_orani_esigi'])
     }
     config['Kisayollar'] = {
         'alan_sec': AYARLAR['alan_sec'],
@@ -90,9 +90,9 @@ def ayarlari_yukle():
 
     # config.ini dosyası yoksa varsayılan değerlerle oluştur
     if not os.path.exists(CONFIG_DOSYASI):
-        config['Genel'] = {'tesseract_yolu': '', 'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True'}
+        config['Genel'] = {'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True', 'gpu_kullan': 'False'}
         config['Bolge'] = {'top': '0', 'left': '0', 'width': '0', 'height': '0'}
-        config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.5', 'ceviri_omru': '3.0', 'benzerlik_orani_esigi': '0.85'}
+        config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.8', 'ceviri_omru': '3.0', 'benzerlik_orani_esigi': '0.85'}
         config['Kisayollar'] = {'alan_sec': 'f8', 'durdur_devam_et': 'f9', 'programi_kapat': 'f10'}
         with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile:
             config.write(configfile)
@@ -103,7 +103,7 @@ def ayarlari_yukle():
     AYARLAR = {
         'baslangicta_baslat': config.getboolean('Genel', 'baslangicta_baslat', fallback=True),
         'arayuz_dili': config.get('Genel', 'arayuz_dili', fallback='TR'),
-        'tesseract_yolu': config.get('Genel', 'tesseract_yolu', fallback=''),
+        'gpu_kullan': config.getboolean('Genel', 'gpu_kullan', fallback=False),
         'api_anahtari': config.get('Genel', 'api_anahtari', fallback=''),
         'hedef_dil': config.get('Genel', 'hedef_dil', fallback='TR'),
         'top': int(config.get('Bolge', 'top', fallback='0')),
@@ -115,9 +115,9 @@ def ayarlari_yukle():
         'arka_plan_rengi': config.get('Arayuz', 'arka_plan_rengi', fallback='black'),
         'seffaflik': float(config.get('Arayuz', 'seffaflik', fallback='0.7')),
         'ekran_ust_bosluk': int(config.get('Arayuz', 'ekran_ust_bosluk', fallback='30')),
-        'kontrol_araligi': float(config.get('Arayuz', 'kontrol_araligi', fallback='0.5')),
-        'ceviri_omru': float(config.get('Arayuz', 'ceviri_omru', fallback='3.0')), # YENİ AYARI OKU
-        'benzerlik_orani_esigi': float(config.get('Arayuz', 'benzerlik_orani_esigi', fallback=0.85)), # YENİ AYARI OKU
+        'kontrol_araligi': float(config.get('Arayuz', 'kontrol_araligi', fallback='0.8')),
+        'ceviri_omru': float(config.get('Arayuz', 'ceviri_omru', fallback='3.0')),
+        'benzerlik_orani_esigi': float(config.get('Arayuz', 'benzerlik_orani_esigi', fallback=0.85)),
         'alan_sec': config.get('Kisayollar', 'alan_sec', fallback='f8'),
         'durdur_devam_et': config.get('Kisayollar', 'durdur_devam_et', fallback='f9'),
         'programi_kapat': config.get('Kisayollar', 'programi_kapat', fallback='f10')

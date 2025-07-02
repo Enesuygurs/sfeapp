@@ -36,5 +36,8 @@
   "error_body_opacity_invalid": "Please enter a valid decimal number for opacity.",
   "error_body_font_color_invalid": "'{color}' is not a valid font color.",
   "error_body_bg_color_invalid": "'{color}' is not a valid background color.",
-  "info_settings_saved_body": "Settings saved successfully."
+  "info_settings_saved_body": "Settings saved successfully.",
+  "settings_use_gpu": "Use GPU acceleration (requires NVIDIA & CUDA)",
+  "settings_scan_interval_info": "(sec, lower values use more CPU)",
+  "info_gpu_change_restart": "GPU setting changed. Please restart the application for the change to take effect."
 }
