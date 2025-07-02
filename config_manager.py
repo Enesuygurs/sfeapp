@@ -66,7 +66,8 @@ def ayarlari_kaydet():
         'arka_plan_rengi': AYARLAR['arka_plan_rengi'],
         'seffaflik': str(AYARLAR['seffaflik']),
         'ekran_ust_bosluk': str(AYARLAR['ekran_ust_bosluk']),
-        'kontrol_araligi': str(AYARLAR['kontrol_araligi'])
+        'kontrol_araligi': str(AYARLAR['kontrol_araligi']),
+        'ceviri_omru': str(AYARLAR['ceviri_omru']) # YENİ AYAR
     }
     config['Kisayollar'] = {
         'alan_sec': AYARLAR['alan_sec'],
@@ -90,7 +91,7 @@ def ayarlari_yukle():
     if not os.path.exists(CONFIG_DOSYASI):
         config['Genel'] = {'tesseract_yolu': '', 'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True'}
         config['Bolge'] = {'top': '0', 'left': '0', 'width': '0', 'height': '0'}
-        config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.5'}
+        config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.5', 'ceviri_omru': '3.0'}
         config['Kisayollar'] = {'alan_sec': 'f8', 'durdur_devam_et': 'f9', 'programi_kapat': 'f10'}
         with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile:
             config.write(configfile)
@@ -114,6 +115,7 @@ def ayarlari_yukle():
         'seffaflik': float(config.get('Arayuz', 'seffaflik', fallback='0.7')),
         'ekran_ust_bosluk': int(config.get('Arayuz', 'ekran_ust_bosluk', fallback='30')),
         'kontrol_araligi': float(config.get('Arayuz', 'kontrol_araligi', fallback='0.5')),
+        'ceviri_omru': float(config.get('Arayuz', 'ceviri_omru', fallback='3.0')), # YENİ AYARI OKU
         'alan_sec': config.get('Kisayollar', 'alan_sec', fallback='f8'),
         'durdur_devam_et': config.get('Kisayollar', 'durdur_devam_et', fallback='f9'),
         'programi_kapat': config.get('Kisayollar', 'programi_kapat', fallback='f10')
