@@ -12,7 +12,7 @@ import deepl
 import keyboard
 import pystray
 from PIL import Image
-
+from difflib import SequenceMatcher # YENİ IMPORT
 # Kendi modüllerimizi import edelim
 from config_manager import AYARLAR, get_lang, get_resource_path, arayuz_dilini_yukle
 from gui import GuiManager
@@ -118,12 +118,12 @@ def main_translation_loop():
                 
                 metin = pytesseract.image_to_string(islenmis_img, lang='eng')
                 temiz_metin = metin.strip().replace('\n', ' ')
-                
-                if temiz_metin and temiz_metin != son_metin:
-                    son_metin = temiz_metin
+                similarity_ratio = SequenceMatcher(None, temiz_metin, son_metin).ratio()
+                if temiz_metin and similarity_ratio < AYARLAR['benzerlik_orani_esigi']:
+                    son_metin = temiz_metin # Yeni metni hemen referans olarak al
                     if translator:
                         try:
-                            if not is_paused: # Çeviri sırasında durdurulmuş olabilir
+                            if not is_paused:
                                 cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
                                 if not is_paused:
                                     gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
@@ -132,6 +132,7 @@ def main_translation_loop():
                             if not is_paused:
                                 gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
                 elif not temiz_metin and son_metin:
+                    # Ekran temizlendiğinde, bir sonraki metin için sıfırla
                     son_metin = ""
                     gui_queue.put({'type': 'update_text', 'text': ""})
             

@@ -36,5 +36,7 @@
   "error_body_opacity_invalid": "Lütfen şeffaflık için geçerli bir ondalıklı sayı girin.",
   "error_body_font_color_invalid": "'{color}' geçerli bir yazı tipi rengi değil.",
   "error_body_bg_color_invalid": "'{color}' geçerli bir arka plan rengi değil.",
-  "info_settings_saved_body": "Ayarlar başarıyla kaydedildi."
+  "info_settings_saved_body": "Ayarlar başarıyla kaydedildi.",
+  "settings_translation_lifespan": "Çeviri Ömrü (sn):",
+  "settings_similarity_threshold": "Benzerlik Eşiği (%):"
 }
