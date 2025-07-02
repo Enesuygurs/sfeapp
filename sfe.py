@@ -1,4 +1,4 @@
-# main.py
+# sfe.py
 
 import time
 import threading
@@ -12,7 +12,7 @@ import deepl
 import keyboard
 import pystray
 from PIL import Image
-from difflib import SequenceMatcher # YENİ IMPORT
+from difflib import SequenceMatcher
 # Kendi modüllerimizi import edelim
 from config_manager import AYARLAR, get_lang, get_resource_path, arayuz_dilini_yukle
 from gui import GuiManager
@@ -23,6 +23,10 @@ is_paused = False
 son_metin = ""
 tray_icon = None
 translator = None
+
+# --- YENİ: İkon imajları için global değişkenler ---
+icon_running = None
+icon_stopped = None
 
 # --- KONTROL VE KISAYOL FONKSİYONLARI ---
 def register_hotkeys():
@@ -39,7 +43,7 @@ def toggle_pause(*args):
     gui_queue.put({'type': 'update_text', 'text': None}) # Overlay'i gizle
     if is_paused:
         son_metin = ""
-    update_tray_menu()
+    update_tray_menu() # Bu fonksiyon hem menüyü hem ikonu güncelleyecek
 
 def quit_program(*args):
     """Uygulamayı güvenli bir şekilde kapatır."""
@@ -59,11 +63,16 @@ def ayarlari_penceresini_ac():
     """Ayarlar penceresini açmak için GUI'ye mesaj gönderir."""
     gui_queue.put({'type': 'open_settings'})
 
+# DEĞİŞTİRİLDİ: Bu fonksiyon artık ikonu da güncelliyor
 def update_tray_menu():
-    """Sistem tepsisi menüsünü güncel durum ve dile göre yeniler."""
+    """Sistem tepsisi menüsünü ve İKONUNU güncel durum ve dile göre yeniler."""
     global tray_icon
     if not tray_icon:
         return
+
+    # YENİ: Duruma göre ikonu güncelle
+    if icon_stopped and icon_running: # İmajların yüklendiğinden emin ol
+        tray_icon.icon = icon_stopped if is_paused else icon_running
         
     pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
     new_menu = pystray.Menu(
@@ -169,9 +178,32 @@ if __name__ == "__main__":
     # Kısayolları ilk kez kaydet
     register_hotkeys()
     
+    # --- DEĞİŞTİRİLDİ: İkon oluşturma mantığı ---
+    # YENİ: İkonları program başında yükle
+    try:
+        # ÖNEMLİ: Kendi dosya yapınıza göre yolu düzeltin. `images` klasörünün ana dizinde olduğunu varsayıyorum.
+        icon_running = Image.open(get_resource_path("images/icon.png"))
+        icon_stopped = Image.open(get_resource_path("images/stop.png"))
+    except FileNotFoundError:
+        print("HATA: İkon dosyaları (icon.png, stop.png) 'images' klasöründe bulunamadı!")
+        # Hata durumunda varsayılan bir imaj oluşturulabilir veya program kapatılabilir.
+        # Şimdilik devam etmesi için en az bir ikonu yüklüyoruz.
+        try:
+             icon_running = Image.open(get_resource_path("images/icon.png"))
+        except:
+             icon_running = Image.new('RGB', (64, 64), color = 'red') # Fallback
+        icon_stopped = icon_running
+
+
+    # YENİ: Başlangıç durumuna göre doğru ikonu seç
+    initial_icon = icon_stopped if is_paused else icon_running
+    
     # Sistem tepsisi ikonunu oluştur ve başlat
-    image = Image.open(get_resource_path("icon.png"))
-    tray_icon = pystray.Icon(get_lang("app_title"), image, menu=pystray.Menu())
+    tray_icon = pystray.Icon(
+        get_lang("app_title"), 
+        initial_icon,  # Seçilen başlangıç ikonunu kullan
+        menu=pystray.Menu()
+    )
     
     # Menüyü ilk kez oluştur
     update_tray_menu()
