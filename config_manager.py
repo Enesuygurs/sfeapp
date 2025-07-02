@@ -1,4 +1,4 @@
-# config_manager.py
+# config_manager.py (Tesseract için optimize edilmiş tam kod)
 
 import os
 import sys
@@ -14,17 +14,14 @@ DESTEKLENEN_HEDEF_DILLER = {}
 
 config = configparser.ConfigParser()
 
-# --- YARDIMCI FONKSİYONLAR ---
+# --- YARDIMCI FONKSİYONLAR (DEĞİŞİKLİK YOK) ---
 def get_lang(key, **kwargs):
-    """Dil dosyasından belirtilen anahtarın değerini alır."""
     return LANG_STRINGS.get(key, key).format(**kwargs)
 
 def get_key_from_value(dictionary, value):
-    """Bir sözlükteki değere karşılık gelen anahtarı bulur."""
     return next((k for k, v in dictionary.items() if v == value), None)
 
 def get_resource_path(relative_path):
-    """PyInstaller ile paketlendiğinde kaynak dosyalarına doğru yolu bulur."""
     try:
         base_path = sys._MEIPASS
     except Exception:
@@ -33,14 +30,12 @@ def get_resource_path(relative_path):
 
 # --- ANA FONKSİYONLAR ---
 def arayuz_dilini_yukle(dil_kodu):
-    """Belirtilen dil koduna ait JSON dosyasını yükler."""
     global LANG_STRINGS
     try:
         lang_file_path = get_resource_path(f"lang/{dil_kodu.lower()}.json")
         with open(lang_file_path, 'r', encoding='utf-8') as f:
             LANG_STRINGS = json.load(f)
     except FileNotFoundError:
-        # Dil dosyası bulunamazsa İngilizce'ye geri dön
         lang_file_path = get_resource_path("lang/en.json")
         with open(lang_file_path, 'r', encoding='utf-8') as f:
             LANG_STRINGS = json.load(f)
@@ -48,17 +43,28 @@ def arayuz_dilini_yukle(dil_kodu):
 def ayarlari_kaydet():
     """Mevcut AYARLAR sözlüğünü config.ini dosyasına yazar."""
     config['Genel'] = {
+        'tesseract_yolu': AYARLAR['tesseract_yolu'],
         'api_anahtari': AYARLAR['api_anahtari'],
         'arayuz_dili': AYARLAR['arayuz_dili'],
         'hedef_dil': AYARLAR['hedef_dil'],
-        'baslangicta_baslat': str(AYARLAR['baslangicta_baslat']),
-        'gpu_kullan': str(AYARLAR['gpu_kullan'])
+        'baslangicta_baslat': str(AYARLAR['baslangicta_baslat'])
     }
     config['Bolge'] = {
         'top': str(AYARLAR['top']),
         'left': str(AYARLAR['left']),
         'width': str(AYARLAR['width']),
         'height': str(AYARLAR['height'])
+    }
+    # YENİ: OCR için özel ayarlar
+    config['OCR'] = {
+        'isleme_modu': AYARLAR['isleme_modu'],
+        'esik_degeri': str(AYARLAR['esik_degeri']),
+        'renk_alt_sinir_h': str(AYARLAR['renk_alt_sinir_h']),
+        'renk_alt_sinir_s': str(AYARLAR['renk_alt_sinir_s']),
+        'renk_alt_sinir_v': str(AYARLAR['renk_alt_sinir_v']),
+        'renk_ust_sinir_h': str(AYARLAR['renk_ust_sinir_h']),
+        'renk_ust_sinir_s': str(AYARLAR['renk_ust_sinir_s']),
+        'renk_ust_sinir_v': str(AYARLAR['renk_ust_sinir_v'])
     }
     config['Arayuz'] = {
         'font_boyutu': str(AYARLAR['font_boyutu']),
@@ -82,47 +88,56 @@ def ayarlari_yukle():
     """Uygulama için gerekli tüm ayarları ve dil verilerini yükler."""
     global DESTEKLENEN_HEDEF_DILLER, DESTEKLENEN_ARAYUZ_DILLERI, AYARLAR
 
-    # Dil listelerini yükle
     with open(get_resource_path('diller.json'), 'r', encoding='utf-8') as f:
         DESTEKLENEN_HEDEF_DILLER = json.load(f)
     with open(get_resource_path('arayuz_dilleri.json'), 'r', encoding='utf-8') as f:
         DESTEKLENEN_ARAYUZ_DILLERI = json.load(f)
 
-    # config.ini dosyası yoksa varsayılan değerlerle oluştur
     if not os.path.exists(CONFIG_DOSYASI):
-        config['Genel'] = {'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True', 'gpu_kullan': 'False'}
+        config['Genel'] = {'tesseract_yolu': '', 'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True'}
         config['Bolge'] = {'top': '0', 'left': '0', 'width': '0', 'height': '0'}
-        config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.8', 'ceviri_omru': '3.0', 'benzerlik_orani_esigi': '0.85'}
+        # Varsayılanlar: Beyaz renk için HSV değerleri
+        config['OCR'] = {'isleme_modu': 'renk', 'esik_degeri': '180', 'renk_alt_sinir_h': '0', 'renk_alt_sinir_s': '0', 'renk_alt_sinir_v': '180', 'renk_ust_sinir_h': '180', 'renk_ust_sinir_s': '30', 'renk_ust_sinir_v': '255'}
+        config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.4', 'ceviri_omru': '3.0', 'benzerlik_orani_esigi': '0.85'}
         config['Kisayollar'] = {'alan_sec': 'f8', 'durdur_devam_et': 'f9', 'programi_kapat': 'f10'}
         with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile:
             config.write(configfile)
 
     config.read(CONFIG_DOSYASI, encoding='utf-8')
 
-    # Ayarları sözlüğe oku
     AYARLAR = {
+        'tesseract_yolu': config.get('Genel', 'tesseract_yolu', fallback=''),
         'baslangicta_baslat': config.getboolean('Genel', 'baslangicta_baslat', fallback=True),
         'arayuz_dili': config.get('Genel', 'arayuz_dili', fallback='TR'),
-        'gpu_kullan': config.getboolean('Genel', 'gpu_kullan', fallback=False),
         'api_anahtari': config.get('Genel', 'api_anahtari', fallback=''),
         'hedef_dil': config.get('Genel', 'hedef_dil', fallback='TR'),
-        'top': int(config.get('Bolge', 'top', fallback='0')),
-        'left': int(config.get('Bolge', 'left', fallback='0')),
-        'width': int(config.get('Bolge', 'width', fallback='0')),
-        'height': int(config.get('Bolge', 'height', fallback='0')),
-        'font_boyutu': int(config.get('Arayuz', 'font_boyutu', fallback='20')),
+        'top': config.getint('Bolge', 'top', fallback=0),
+        'left': config.getint('Bolge', 'left', fallback=0),
+        'width': config.getint('Bolge', 'width', fallback=0),
+        'height': config.getint('Bolge', 'height', fallback=0),
+        
+        # OCR Ayarları
+        'isleme_modu': config.get('OCR', 'isleme_modu', fallback='renk'),
+        'esik_degeri': config.getint('OCR', 'esik_degeri', fallback=180),
+        'renk_alt_sinir_h': config.getint('OCR', 'renk_alt_sinir_h', fallback=0),
+        'renk_alt_sinir_s': config.getint('OCR', 'renk_alt_sinir_s', fallback=0),
+        'renk_alt_sinir_v': config.getint('OCR', 'renk_alt_sinir_v', fallback=180),
+        'renk_ust_sinir_h': config.getint('OCR', 'renk_ust_sinir_h', fallback=180),
+        'renk_ust_sinir_s': config.getint('OCR', 'renk_ust_sinir_s', fallback=30),
+        'renk_ust_sinir_v': config.getint('OCR', 'renk_ust_sinir_v', fallback=255),
+        
+        'font_boyutu': config.getint('Arayuz', 'font_boyutu', fallback=20),
         'font_rengi': config.get('Arayuz', 'font_rengi', fallback='white'),
         'arka_plan_rengi': config.get('Arayuz', 'arka_plan_rengi', fallback='black'),
-        'seffaflik': float(config.get('Arayuz', 'seffaflik', fallback='0.7')),
-        'ekran_ust_bosluk': int(config.get('Arayuz', 'ekran_ust_bosluk', fallback='30')),
-        'kontrol_araligi': float(config.get('Arayuz', 'kontrol_araligi', fallback='0.8')),
-        'ceviri_omru': float(config.get('Arayuz', 'ceviri_omru', fallback='3.0')),
-        'benzerlik_orani_esigi': float(config.get('Arayuz', 'benzerlik_orani_esigi', fallback=0.85)),
+        'seffaflik': config.getfloat('Arayuz', 'seffaflik', fallback=0.7),
+        'ekran_ust_bosluk': config.getint('Arayuz', 'ekran_ust_bosluk', fallback=30),
+        'kontrol_araligi': config.getfloat('Arayuz', 'kontrol_araligi', fallback=0.4),
+        'ceviri_omru': config.getfloat('Arayuz', 'ceviri_omru', fallback=3.0),
+        'benzerlik_orani_esigi': config.getfloat('Arayuz', 'benzerlik_orani_esigi', fallback=0.85),
         'alan_sec': config.get('Kisayollar', 'alan_sec', fallback='f8'),
         'durdur_devam_et': config.get('Kisayollar', 'durdur_devam_et', fallback='f9'),
         'programi_kapat': config.get('Kisayollar', 'programi_kapat', fallback='f10')
     }
     arayuz_dilini_yukle(AYARLAR['arayuz_dili'])
 
-# Modül yüklendiğinde ayarların hazır olması için fonksiyonu çağır
 ayarlari_yukle()

@@ -79,11 +79,23 @@ class AyarlarPenceresi(tk.Toplevel):
             print(f"HATA: icon.png yüklenemedi: {e}")
 
         # Değişkenler
+        self.var_tesseract = tk.StringVar(self, value=AYARLAR['tesseract_yolu'])
         self.var_baslangicta_baslat = tk.BooleanVar(self, value=AYARLAR['baslangicta_baslat'])
-        self.var_gpu_kullan = tk.BooleanVar(self, value=AYARLAR['gpu_kullan'])
         self.var_api_key = tk.StringVar(self, value=AYARLAR['api_anahtari'])
         self.var_hedef_dil = tk.StringVar(self, value=get_key_from_value(DESTEKLENEN_HEDEF_DILLER, AYARLAR['hedef_dil']))
         self.var_arayuz_dili = tk.StringVar(self, value=DESTEKLENEN_ARAYUZ_DILLERI.get(AYARLAR['arayuz_dili']))
+        
+        # OCR Değişkenleri
+        self.var_isleme_modu = tk.StringVar(self, value=AYARLAR['isleme_modu'])
+        self.var_esik_degeri = tk.IntVar(self, value=AYARLAR['esik_degeri'])
+        self.var_h_min = tk.IntVar(self, value=AYARLAR['renk_alt_sinir_h'])
+        self.var_s_min = tk.IntVar(self, value=AYARLAR['renk_alt_sinir_s'])
+        self.var_v_min = tk.IntVar(self, value=AYARLAR['renk_alt_sinir_v'])
+        self.var_h_max = tk.IntVar(self, value=AYARLAR['renk_ust_sinir_h'])
+        self.var_s_max = tk.IntVar(self, value=AYARLAR['renk_ust_sinir_s'])
+        self.var_v_max = tk.IntVar(self, value=AYARLAR['renk_ust_sinir_v'])
+
+        # Arayüz Değişkenleri
         self.var_font_boyutu = tk.StringVar(self, value=str(AYARLAR['font_boyutu']))
         self.var_font_rengi = tk.StringVar(self, value=AYARLAR['font_rengi'])
         self.var_bg_rengi = tk.StringVar(self, value=AYARLAR['arka_plan_rengi'])
@@ -92,6 +104,8 @@ class AyarlarPenceresi(tk.Toplevel):
         self.var_kontrol_araligi = tk.StringVar(self, value=str(AYARLAR['kontrol_araligi']))
         self.var_ceviri_omru = tk.StringVar(self, value=str(AYARLAR['ceviri_omru']))
         self.var_benzerlik_orani = tk.StringVar(self, value=str(AYARLAR['benzerlik_orani_esigi']))
+
+        # Kısayol Değişkenleri
         self.var_alan_sec = tk.StringVar(self, value=AYARLAR['alan_sec'])
         self.var_durdur_devam = tk.StringVar(self, value=AYARLAR['durdur_devam_et'])
         self.var_kapat = tk.StringVar(self, value=AYARLAR['programi_kapat'])
@@ -106,10 +120,12 @@ class AyarlarPenceresi(tk.Toplevel):
         self.notebook.pack(pady=10, padx=10, expand=True, fill="both")
 
         self.genel_tab = self.create_tab('settings_tab_general')
+        self.ocr_tab = self.create_tab('settings_tab_ocr')
         self.arayuz_tab = self.create_tab('settings_tab_interface')
         self.kisayollar_tab = self.create_tab('settings_tab_hotkeys')
         
         self.populate_general_tab(self.genel_tab)
+        self.populate_ocr_tab(self.ocr_tab)
         self.populate_interface_tab(self.arayuz_tab)
         self.populate_hotkeys_tab(self.kisayollar_tab)
 
@@ -130,11 +146,37 @@ class AyarlarPenceresi(tk.Toplevel):
         frame = ttk.Frame(self.notebook, padding="10"); self.notebook.add(frame, text=get_lang(lang_key)); return frame
     
     def populate_general_tab(self, frame):
-        ttk.Label(frame, text=get_lang('settings_deepl_api_key')).grid(row=0, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_api_key, width=50, show="*").grid(row=0, column=1, columnspan=2, sticky='ew')
-        ttk.Label(frame, text=get_lang('settings_target_language')).grid(row=1, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_hedef_dil, values=list(DESTEKLENEN_HEDEF_DILLER.keys()), state="readonly").grid(row=1, column=1, sticky='ew', columnspan=2)
-        ttk.Label(frame, text=get_lang('settings_interface_language')).grid(row=2, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_arayuz_dili, values=list(DESTEKLENEN_ARAYUZ_DILLERI.values()), state="readonly").grid(row=2, column=1, sticky='ew', columnspan=2)
-        ttk.Checkbutton(frame, text=get_lang('settings_start_on_launch'), variable=self.var_baslangicta_baslat).grid(row=3, column=0, columnspan=3, sticky='w', pady=(10,0))
-        ttk.Checkbutton(frame, text=get_lang('settings_use_gpu'), variable=self.var_gpu_kullan).grid(row=4, column=0, columnspan=3, sticky='w', pady=(5,0))
+        ttk.Label(frame, text=get_lang('settings_tesseract_path')).grid(row=0, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_tesseract, width=40).grid(row=0, column=1, sticky='ew'); ttk.Button(frame, text=get_lang('settings_button_browse'), command=lambda: self.dosya_sec(self.var_tesseract)).grid(row=0, column=2, sticky='ew', padx=(5,0))
+        ttk.Label(frame, text=get_lang('settings_deepl_api_key')).grid(row=1, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_api_key, width=50, show="*").grid(row=1, column=1, columnspan=2, sticky='ew')
+        ttk.Label(frame, text=get_lang('settings_target_language')).grid(row=2, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_hedef_dil, values=list(DESTEKLENEN_HEDEF_DILLER.keys()), state="readonly").grid(row=2, column=1, sticky='ew', columnspan=2)
+        ttk.Label(frame, text=get_lang('settings_interface_language')).grid(row=3, column=0, sticky='w', pady=2); ttk.Combobox(frame, textvariable=self.var_arayuz_dili, values=list(DESTEKLENEN_ARAYUZ_DILLERI.values()), state="readonly").grid(row=3, column=1, sticky='ew', columnspan=2)
+        ttk.Checkbutton(frame, text=get_lang('settings_start_on_launch'), variable=self.var_baslangicta_baslat).grid(row=4, column=0, columnspan=3, sticky='w', pady=(10,0))
+    
+    def populate_ocr_tab(self, frame):
+        mode_frame = ttk.LabelFrame(frame, text=get_lang('settings_ocr_mode'), padding=10)
+        mode_frame.pack(fill='x', expand=True, pady=(0, 10))
+        ttk.Radiobutton(mode_frame, text=get_lang('settings_ocr_mode_color'), variable=self.var_isleme_modu, value='renk').pack(side='left', padx=5)
+        ttk.Radiobutton(mode_frame, text=get_lang('settings_ocr_mode_threshold'), variable=self.var_isleme_modu, value='esik').pack(side='left', padx=5)
+        
+        color_frame = ttk.LabelFrame(frame, text=get_lang('settings_ocr_color_settings'), padding=10)
+        color_frame.pack(fill='x', expand=True, pady=5)
+        ttk.Label(color_frame, text=get_lang('settings_ocr_color_info')).pack(anchor='w', pady=(0,5))
+        
+        min_frame = ttk.Frame(color_frame); min_frame.pack(fill='x', expand=True)
+        ttk.Label(min_frame, text=get_lang('settings_ocr_min_values'), width=10).pack(side='left')
+        ttk.Label(min_frame, text="H:").pack(side='left'); ttk.Scale(min_frame, from_=0, to=180, variable=self.var_h_min).pack(side='left', fill='x', expand=True); ttk.Label(min_frame, textvariable=self.var_h_min, width=3).pack(side='left')
+        ttk.Label(min_frame, text="S:").pack(side='left'); ttk.Scale(min_frame, from_=0, to=255, variable=self.var_s_min).pack(side='left', fill='x', expand=True); ttk.Label(min_frame, textvariable=self.var_s_min, width=3).pack(side='left')
+        ttk.Label(min_frame, text="V:").pack(side='left'); ttk.Scale(min_frame, from_=0, to=255, variable=self.var_v_min).pack(side='left', fill='x', expand=True); ttk.Label(min_frame, textvariable=self.var_v_min, width=3).pack(side='left')
+        
+        max_frame = ttk.Frame(color_frame); max_frame.pack(fill='x', expand=True, pady=(5,0))
+        ttk.Label(max_frame, text=get_lang('settings_ocr_max_values'), width=10).pack(side='left')
+        ttk.Label(max_frame, text="H:").pack(side='left'); ttk.Scale(max_frame, from_=0, to=180, variable=self.var_h_max).pack(side='left', fill='x', expand=True); ttk.Label(max_frame, textvariable=self.var_h_max, width=3).pack(side='left')
+        ttk.Label(max_frame, text="S:").pack(side='left'); ttk.Scale(max_frame, from_=0, to=255, variable=self.var_s_max).pack(side='left', fill='x', expand=True); ttk.Label(max_frame, textvariable=self.var_s_max, width=3).pack(side='left')
+        ttk.Label(max_frame, text="V:").pack(side='left'); ttk.Scale(max_frame, from_=0, to=255, variable=self.var_v_max).pack(side='left', fill='x', expand=True); ttk.Label(max_frame, textvariable=self.var_v_max, width=3).pack(side='left')
+
+        thresh_frame = ttk.LabelFrame(frame, text=get_lang('settings_ocr_threshold_settings'), padding=10)
+        thresh_frame.pack(fill='x', expand=True, pady=5)
+        ttk.Scale(thresh_frame, from_=0, to=255, variable=self.var_esik_degeri, length=300).pack(side='left', fill='x', expand=True); ttk.Label(thresh_frame, textvariable=self.var_esik_degeri).pack(side='left', padx=5)
 
     def populate_interface_tab(self, frame):
         ttk.Label(frame, text=get_lang('settings_font_size')).grid(row=0, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_font_boyutu, validate="key", validatecommand=self.validate_integer).grid(row=0, column=1, columnspan=2, sticky='ew')
@@ -142,12 +184,7 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Label(frame, text=get_lang('settings_bg_color')).grid(row=2, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_bg_rengi, width=40).grid(row=2, column=1, sticky='ew'); ttk.Button(frame, text="...", command=lambda v=self.var_bg_rengi: self.renk_sec(v), width=3).grid(row=2, column=2, sticky='ew', padx=(5,0))
         ttk.Label(frame, text=get_lang('settings_opacity')).grid(row=3, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_seffaflik, validate="key", validatecommand=self.validate_float).grid(row=3, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_top_margin')).grid(row=4, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_ust_bosluk, validate="key", validatecommand=self.validate_integer).grid(row=4, column=1, columnspan=2, sticky='ew')
-        
-        scan_frame = ttk.Frame(frame); scan_frame.grid(row=5, column=0, columnspan=3, sticky='ew', pady=2)
-        ttk.Label(scan_frame, text=get_lang('settings_scan_interval')).pack(side='left', anchor='w')
-        ttk.Entry(scan_frame, textvariable=self.var_kontrol_araligi, validate="key", validatecommand=self.validate_float, width=5).pack(side='left', padx=5)
-        ttk.Label(scan_frame, text=get_lang('settings_scan_interval_info'), foreground="gray").pack(side='left', anchor='w')
-        
+        ttk.Label(frame, text=get_lang('settings_scan_interval')).grid(row=5, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_kontrol_araligi, validate="key", validatecommand=self.validate_float).grid(row=5, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_translation_lifespan')).grid(row=6, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_ceviri_omru, validate="key", validatecommand=self.validate_float).grid(row=6, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_similarity_threshold')).grid(row=7, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_benzerlik_orani, validate="key", validatecommand=self.validate_float).grid(row=7, column=1, columnspan=2, sticky='ew')
     
@@ -165,6 +202,10 @@ class AyarlarPenceresi(tk.Toplevel):
             if event.event_type == keyboard.KEY_DOWN: var.set(event.name)
         except: pass
 
+    def dosya_sec(self, var):
+        filepath = filedialog.askopenfilename(title="Tesseract.exe Seç", filetypes=[("Executable", "*.exe")]);
+        if filepath: var.set(filepath)
+
     def renk_sec(self, var):
         mevcut_renk = var.get()
         try: self.winfo_rgb(mevcut_renk)
@@ -176,11 +217,9 @@ class AyarlarPenceresi(tk.Toplevel):
         try:
             seffaflik_degeri = float(self.var_seffaflik.get())
             if not (0.1 <= seffaflik_degeri <= 1.0):
-                messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_opacity_range"), parent=self)
-                return
+                messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_opacity_range"), parent=self); return
         except ValueError:
-            messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_opacity_invalid"), parent=self)
-            return
+            messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_opacity_invalid"), parent=self); return
         
         yeni_font_rengi = self.var_font_rengi.get(); yeni_bg_rengi = self.var_bg_rengi.get()
         try: self.winfo_rgb(yeni_font_rengi)
@@ -192,9 +231,12 @@ class AyarlarPenceresi(tk.Toplevel):
 
         eski_ayarlar = AYARLAR.copy()
         yeni_ayarlar = {
-            'baslangicta_baslat': self.var_baslangicta_baslat.get(), 'gpu_kullan': self.var_gpu_kullan.get(),
+            'tesseract_yolu': self.var_tesseract.get(), 'baslangicta_baslat': self.var_baslangicta_baslat.get(),
             'api_anahtari': self.var_api_key.get(), 'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 
             'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
+            'isleme_modu': self.var_isleme_modu.get(), 'esik_degeri': self.var_esik_degeri.get(),
+            'renk_alt_sinir_h': self.var_h_min.get(), 'renk_alt_sinir_s': self.var_s_min.get(), 'renk_alt_sinir_v': self.var_v_min.get(),
+            'renk_ust_sinir_h': self.var_h_max.get(), 'renk_ust_sinir_s': self.var_s_max.get(), 'renk_ust_sinir_v': self.var_v_max.get(),
             'font_boyutu': int(self.var_font_boyutu.get()), 'font_rengi': yeni_font_rengi, 'arka_plan_rengi': yeni_bg_rengi,
             'seffaflik': float(self.var_seffaflik.get()), 'ekran_ust_bosluk': int(self.var_ust_bosluk.get()), 
             'kontrol_araligi': float(self.var_kontrol_araligi.get()), 'ceviri_omru': float(self.var_ceviri_omru.get()),
@@ -202,7 +244,6 @@ class AyarlarPenceresi(tk.Toplevel):
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
         AYARLAR.update(yeni_ayarlar)
-
         ayarlari_kaydet()
         if self.overlay.winfo_exists(): self.overlay.apply_settings()
 
@@ -212,12 +253,7 @@ class AyarlarPenceresi(tk.Toplevel):
         if eski_ayarlar['arayuz_dili'] != AYARLAR['arayuz_dili']:
             arayuz_dilini_yukle(AYARLAR['arayuz_dili']); self.hotkey_callbacks['update_tray']()
         
-        if eski_ayarlar['gpu_kullan'] != AYARLAR['gpu_kullan']:
-            messagebox.showinfo(get_lang('app_title'), get_lang('info_gpu_change_restart'), parent=self)
-        else:
-            messagebox.showinfo(get_lang('app_title'), get_lang('info_settings_saved_body'), parent=self)
-            
-        self.destroy()
+        messagebox.showinfo(get_lang('app_title'), get_lang('info_settings_saved_body'), parent=self); self.destroy()
 
 class AlanSecici(tk.Toplevel):
     def __init__(self, master):
@@ -239,60 +275,40 @@ class OverlayGUI(tk.Toplevel):
         self.wm_attributes("-topmost", True)
         self.wm_attributes("-transparentcolor", "gray15")
         self.config(bg="gray15")
-
         self.screen_width = self.winfo_screenwidth()
-        
         self.container = tk.Frame(self, bg='gray15')
         self.container.pack()
-
         self.active_translations = []
         self.translation_labels = []
-
         self.apply_settings()
         self.withdraw()
-        
         self.after(100, self.update_display_loop)
-
     def apply_settings(self):
         self.wm_attributes("-alpha", AYARLAR['seffaflik'])
-
     def add_translation(self, text):
         if not text:
             self.active_translations.clear()
             return
-            
         death_time = time.time() + AYARLAR['ceviri_omru']
         new_entry = {'text': text, 'death_time': death_time}
         self.active_translations.insert(0, new_entry)
-
     def update_display_loop(self):
         current_time = time.time()
         self.active_translations = [t for t in self.active_translations if t['death_time'] > current_time]
-
-        for label in self.translation_labels:
-            label.destroy()
+        for label in self.translation_labels: label.destroy()
         self.translation_labels.clear()
-
         if not self.active_translations:
             self.withdraw()
         else:
             self.deiconify()
             for translation in self.active_translations:
-                label = tk.Label(
-                    self.container, text=translation['text'],
-                    font=("Arial", AYARLAR['font_boyutu'], "bold"),
-                    fg=AYARLAR['font_rengi'], bg=AYARLAR['arka_plan_rengi'],
-                    wraplength=self.screen_width * 0.8, justify="center",
-                    padx=15, pady=5
-                )
+                label = tk.Label(self.container, text=translation['text'], font=("Arial", AYARLAR['font_boyutu'], "bold"), fg=AYARLAR['font_rengi'], bg=AYARLAR['arka_plan_rengi'], wraplength=self.screen_width * 0.8, justify="center", padx=15, pady=5)
                 label.pack(pady=2)
                 self.translation_labels.append(label)
-
             self.update_idletasks()
             width = self.container.winfo_reqwidth()
             height = self.container.winfo_reqheight()
             x = (self.screen_width // 2) - (width // 2)
             y = AYARLAR['ekran_ust_bosluk']
             self.geometry(f"{width}x{height}+{x}+{y}")
-        
         self.after(100, self.update_display_loop)
