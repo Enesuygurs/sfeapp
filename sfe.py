@@ -155,7 +155,7 @@ if __name__ == "__main__":
     register_hotkeys()
     
     # Sistem tepsisi ikonunu oluştur ve başlat
-    image = Image.open(get_resource_path("icon.png"))
+    image = Image.open(get_resource_path("images/icon.png"))
     tray_icon = pystray.Icon(get_lang("app_title"), image, menu=pystray.Menu())
     
     # Menüyü ilk kez oluştur
