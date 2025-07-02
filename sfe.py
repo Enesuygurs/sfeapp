@@ -1,4 +1,4 @@
-# sfe.py (Tesseract ile çalışan tam kod)
+# main.py
 
 import time
 import threading
@@ -12,7 +12,8 @@ import deepl
 import keyboard
 import pystray
 from PIL import Image
-from difflib import SequenceMatcher
+from difflib import SequenceMatcher # YENİ IMPORT
+# Kendi modüllerimizi import edelim
 from config_manager import AYARLAR, get_lang, get_resource_path, arayuz_dilini_yukle
 from gui import GuiManager
 
@@ -22,6 +23,10 @@ is_paused = False
 son_metin = ""
 tray_icon = None
 translator = None
+
+# --- YENİ: İkon imajları için global değişkenler ---
+icon_running = None
+icon_stopped = None
 
 # --- KISAYOL FONKSİYONLARI (DEĞİŞİKLİK YOK) ---
 def register_hotkeys():
@@ -33,8 +38,9 @@ def register_hotkeys():
 def toggle_pause(*args):
     global is_paused, son_metin
     is_paused = not is_paused
-    gui_queue.put({'type': 'update_text', 'text': None})
-    if is_paused: son_metin = ""
+    gui_queue.put({'type': 'update_text', 'text': None}) # Overlay'i gizle
+    if is_paused:
+        son_metin = ""
     update_tray_menu()
 
 def quit_program(*args):
@@ -49,9 +55,13 @@ def alani_sec_ve_kaydet():
 def ayarlari_penceresini_ac():
     gui_queue.put({'type': 'open_settings'})
 
+# DEĞİŞTİRİLDİ: Bu fonksiyon artık ikonu da güncelliyor
 def update_tray_menu():
+    """Sistem tepsisi menüsünü güncel durum ve dile göre yeniler."""
     global tray_icon
-    if not tray_icon: return
+    if not tray_icon:
+        return
+        
     pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
     new_menu = pystray.Menu(pystray.MenuItem(pause_text, toggle_pause), pystray.MenuItem(get_lang('menu_select_area'), alani_sec_ve_kaydet), pystray.MenuItem(get_lang('menu_settings'), ayarlari_penceresini_ac), pystray.Menu.SEPARATOR, pystray.MenuItem(get_lang('menu_exit'), quit_program))
     tray_icon.title = get_lang('app_title')
@@ -143,8 +153,12 @@ if __name__ == "__main__":
     translation_thread = threading.Thread(target=main_translation_loop, daemon=True)
     translation_thread.start()
     register_hotkeys()
+    
+    # Sistem tepsisi ikonunu oluştur ve başlat
     image = Image.open(get_resource_path("icon.png"))
     tray_icon = pystray.Icon(get_lang("app_title"), image, menu=pystray.Menu())
+    
+    # Menüyü ilk kez oluştur
     update_tray_menu()
     tray_icon.run()
     os._exit(0)
