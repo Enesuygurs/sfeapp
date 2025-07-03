@@ -46,5 +46,13 @@
   "error_tesseract_path_body": "Tesseract yolu bulunamadı veya geçersiz. Lütfen Ayarlar > Genel sekmesinden Tesseract.exe dosyasının konumunu doğru bir şekilde belirtin.",
   "error_title_hotkey_conflict": "Kısayol Çakışması",
   "error_body_hotkey_conflict": "Lütfen her işlev için farklı bir kısayol tuşu atayın. Aynı tuş birden fazla işlev için kullanılamaz.",
-    "settings_source_min_length": "Kaynak Metin Min. Uzunluk"
+  "settings_source_min_length": "Kaynak Metin Min. Uzunluk",
+  "settings_tab_ocr": "OCR Ayarları",
+  "settings_ocr_mode": "Görüntü İşleme Modu",
+  "settings_ocr_grayscale_threshold": "Gri Tonlama Eşik Ayarı",
+  "settings_ocr_threshold_value": "Eşik Değeri (0-255)",
+  "settings_ocr_color_filter": "Renk Filtresi (HSV)",
+  "settings_ocr_hsv_guide": "Altyazı rengini tanımlayın (Google 'color picker to hsv').",
+  "settings_ocr_lower_bound": "Alt Sınır",
+  "settings_ocr_upper_bound": "Üst Sınır"
 }

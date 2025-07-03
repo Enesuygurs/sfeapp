@@ -12,7 +12,6 @@ import deepl
 import keyboard
 import pystray
 from PIL import Image
-import hashlib
 import re
 from difflib import SequenceMatcher
 from config_manager import AYARLAR, get_lang, get_resource_path, arayuz_dilini_yukle
@@ -25,6 +24,7 @@ tray_icon = None
 translator = None
 icon_running = None
 icon_stopped = None
+ocr_izin_verildi = None # YENİ: Kontrol olayı
 
 def normalize_text(text):
     text = text.lower()
@@ -47,14 +47,12 @@ def toggle_pause(*args):
     update_tray_menu()
 
 def quit_program(*args):
-    if tray_icon:
-        tray_icon.stop()
+    if tray_icon: tray_icon.stop()
     gui_queue.put({'type': 'quit'})
 
 def alani_sec_ve_kaydet():
     should_resume_after = not is_paused
-    if should_resume_after:
-        toggle_pause()
+    if should_resume_after: toggle_pause()
     gui_queue.put({'type': 'open_selector', 'should_resume': should_resume_after})
 
 def ayarlari_penceresini_ac():
@@ -85,61 +83,83 @@ def main_translation_loop():
         gui_queue.put({'type': 'show_message_error', 'title': get_lang('error_title_deepl'), 'body': get_lang('error_body_deepl_key')})
         translator = None
 
-    sct = mss.mss()
-    while True:
-        try:
-            if not is_paused:
-                if not os.path.exists(AYARLAR['tesseract_yolu']):
-                    if not is_paused: toggle_pause()
-                    gui_queue.put({'type': 'show_message_error', 'title': get_lang('error_tesseract_path_title'), 'body': get_lang('error_tesseract_path_body')})
-                    gui_queue.put({'type': 'open_settings'})
-                    time.sleep(5)
+    # Bu thread kendi mss objesini oluşturacak
+    with mss.mss() as sct:
+        while True:
+            try:
+                # YENİ: Önizleme aracının çalışıp çalışmadığını kontrol et
+                if not ocr_izin_verildi.is_set():
+                    time.sleep(0.2)
                     continue
 
-                bolge = {'top': AYARLAR['top'], 'left': AYARLAR['left'], 'width': AYARLAR['width'], 'height': AYARLAR['height']}
-                if bolge['width'] < 10 or bolge['height'] < 10:
-                    time.sleep(1)
-                    continue
+                if not is_paused:
+                    if not os.path.exists(AYARLAR['tesseract_yolu']):
+                        if not is_paused: toggle_pause()
+                        gui_queue.put({'type': 'show_message_error', 'title': get_lang('error_tesseract_path_title'), 'body': get_lang('error_tesseract_path_body')})
+                        gui_queue.put({'type': 'open_settings'})
+                        time.sleep(5)
+                        continue
 
-                ekran_goruntusu = sct.grab(bolge)
-                img = np.array(ekran_goruntusu)
-                gri_img = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-                _, islenmis_img = cv2.threshold(gri_img, 180, 255, cv2.THRESH_BINARY_INV)
-                metin = pytesseract.image_to_string(islenmis_img, lang='eng')
-                temiz_metin = metin.strip().replace('\n', ' ')
+                    bolge = {'top': AYARLAR['top'], 'left': AYARLAR['left'], 'width': AYARLAR['width'], 'height': AYARLAR['height']}
+                    if bolge['width'] < 10 or bolge['height'] < 10:
+                        time.sleep(1)
+                        continue
 
-                if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
-                    yeni_normal_metin = normalize_text(temiz_metin)
-                    if yeni_normal_metin:
-                        benzerlik = SequenceMatcher(None, yeni_normal_metin, son_normal_metin).ratio()
-                        if benzerlik < AYARLAR['kaynak_metin_benzerlik_esigi']:
-                            son_normal_metin = yeni_normal_metin
-                            if translator:
-                                try:
-                                    if not is_paused:
-                                        # --- DEĞİŞİKLİK BURADA: API'ye TEMİZLENMİŞ METNİ GÖNDERİYORUZ ---
-                                        cevirilmis = translator.translate_text(yeni_normal_metin, target_lang=AYARLAR['hedef_dil'])
+                    img = np.array(sct.grab(bolge))
+                    isleme_modu = AYARLAR.get('isleme_modu', 'gri_esik')
+                    
+                    if isleme_modu == 'renk_filtresi':
+                        hsv_img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+                        hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
+                        lower_bound = np.array([AYARLAR['renk_alt_sinir_h'], AYARLAR['renk_alt_sinir_s'], AYARLAR['renk_alt_sinir_v']])
+                        upper_bound = np.array([AYARLAR['renk_ust_sinir_h'], AYARLAR['renk_ust_sinir_s'], AYARLAR['renk_ust_sinir_v']])
+                        mask = cv2.inRange(hsv_img, lower_bound, upper_bound)
+                        islenmis_img = mask
+                    else:
+                        gri_img = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
+                        if isleme_modu == 'adaptif_esik':
+                            islenmis_img = cv2.adaptiveThreshold(gri_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+                        else:
+                            _, islenmis_img = cv2.threshold(gri_img, AYARLAR['esik_degeri'], 255, cv2.THRESH_BINARY)
+                    
+                    metin = pytesseract.image_to_string(islenmis_img, lang='eng')
+                    temiz_metin = metin.strip().replace('\n', ' ')
+
+                    if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
+                        yeni_normal_metin = normalize_text(temiz_metin)
+                        if yeni_normal_metin:
+                            benzerlik = SequenceMatcher(None, yeni_normal_metin, son_normal_metin).ratio()
+                            if benzerlik < AYARLAR['kaynak_metin_benzerlik_esigi']:
+                                son_normal_metin = yeni_normal_metin
+                                if translator:
+                                    try:
                                         if not is_paused:
-                                            gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
-                                except Exception as e:
-                                    print(f"Çeviri hatası: {e}")
-                                    if not is_paused:
-                                        gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
-                elif son_normal_metin:
-                    son_normal_metin = ""
-                    gui_queue.put({'type': 'update_text', 'text': ""})
-            
-            time.sleep(AYARLAR['kontrol_araligi'])
-        except Exception as e:
-            print(f"Ana döngüde beklenmedik hata: {e}")
-            time.sleep(2)
+                                            cevirilmis = translator.translate_text(yeni_normal_metin, target_lang=AYARLAR['hedef_dil'])
+                                            if not is_paused:
+                                                gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
+                                    except Exception as e:
+                                        print(f"Çeviri hatası: {e}")
+                                        if not is_paused:
+                                            gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
+                    elif son_normal_metin:
+                        son_normal_metin = ""
+                        gui_queue.put({'type': 'update_text', 'text': ""})
+                
+                time.sleep(AYARLAR['kontrol_araligi'])
+            except Exception as e:
+                print(f"Ana döngüde beklenmedik hata: {type(e).__name__} - {e}")
+                time.sleep(2)
 
 if __name__ == "__main__":
+    ocr_izin_verildi = threading.Event()
+    ocr_izin_verildi.set() # Başlangıçta izin verili
+
     pytesseract.pytesseract.tesseract_cmd = AYARLAR['tesseract_yolu']
     is_paused = not AYARLAR['baslangicta_baslat'] or AYARLAR['width'] < 10 or AYARLAR['height'] < 10
     
     hotkey_callbacks = {'register': register_hotkeys, 'update_tray': update_tray_menu, 'toggle': toggle_pause}
-    gui_manager_thread = threading.Thread(target=lambda: GuiManager(gui_queue, hotkey_callbacks))
+    
+    gui_manager_thread = threading.Thread(target=lambda: GuiManager(gui_queue, hotkey_callbacks, ocr_izin_verildi))
     gui_manager_thread.start()
     
     translation_thread = threading.Thread(target=main_translation_loop, daemon=True)
@@ -157,6 +177,9 @@ if __name__ == "__main__":
 
     initial_icon = icon_stopped if is_paused else icon_running
     tray_icon = pystray.Icon(get_lang("app_title"), initial_icon, menu=pystray.Menu())
+    
     update_tray_menu()
+    
     tray_icon.run()
+
     os._exit(0)
