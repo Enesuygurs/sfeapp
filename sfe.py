@@ -33,11 +33,10 @@ def register_hotkeys():
     keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
 
 def toggle_pause(*args):
-    global is_paused, son_metin
+    global is_paused
     is_paused = not is_paused
     status = "DURDURULDU" if is_paused else "BAŞLATILDI"
     print(f"\n--- Çeviri {status} ---")
-    gui_queue.put({'type': 'update_text', 'text': None})
     update_tray_menu()
 
 def quit_program(*args):
@@ -147,7 +146,6 @@ def main_translation_loop():
                     if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
                         print(f"Filtre: Minimum uzunluk ({AYARLAR['kaynak_metin_min_uzunluk']}) geçildi.")
                         
-                        print(f"Karşılaştırılıyor:\nYENİ: '{temiz_metin}'\nESKİ: '{son_metin}'")
                         benzerlik = SequenceMatcher(None, temiz_metin, son_metin).ratio()
                         print(f"Benzerlik: {benzerlik:.2f} (Eşik: {AYARLAR['kaynak_metin_benzerlik_esigi']})")
                         
@@ -157,13 +155,9 @@ def main_translation_loop():
                             if translator:
                                 try:
                                     if not is_paused:
-                                        print(f"API'ye Gönderiliyor: '{temiz_metin}'") # API'ye gönderilen metni logla
+                                        print(f"API'ye Gönderiliyor: '{temiz_metin}'")
                                         cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
-                                        
-                                        # --- YENİ LOGLAMA: Çeviri sonucunu göster ---
                                         print(f"ÇEVİRİ SONUCU: '{cevirilmis.text}'")
-                                        # --- BİTİŞ ---
-
                                         if not is_paused:
                                             gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
                                 except Exception as e:
@@ -172,13 +166,7 @@ def main_translation_loop():
                                         gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
                         else:
                             print(">>> KARAR: Benzer metin, çeviri atlanıyor.")
-                    elif temiz_metin:
-                         print(f"Filtre: Minimum uzunluk ({AYARLAR['kaynak_metin_min_uzunluk']}) geçilemedi.")
-                    elif son_metin:
-                        print(">>> KARAR: Ekranda metin yok, arayüz temizleniyor.")
-                        son_metin = ""
-                        gui_queue.put({'type': 'update_text', 'text': ""})
-                
+                    
                 time.sleep(AYARLAR['kontrol_araligi'])
             except Exception as e:
                 print(f"Ana döngüde beklenmedik hata: {type(e).__name__} - {e}")

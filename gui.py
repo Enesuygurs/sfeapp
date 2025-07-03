@@ -269,8 +269,7 @@ class AyarlarPenceresi(tk.Toplevel):
             'seffaflik': float(self.var_seffaflik.get()), 'ekran_ust_bosluk': int(self.var_ust_bosluk.get()), 'kontrol_araligi': float(self.var_kontrol_araligi.get()),
             'ceviri_omru': float(self.var_ceviri_omru.get()), 'kaynak_metin_benzerlik_esigi': float(self.var_kaynak_benzerlik_esigi.get()), 'kaynak_metin_min_uzunluk': int(self.var_kaynak_min_uzunluk.get()),
             'isleme_modu': self.var_isleme_modu.get(), 'esik_degeri': int(self.var_esik_degeri.get()),
-            'otomatik_ters_cevirme': self.var_otomatik_ters_cevirme.get(),
-            'otomatik_ters_cevirme_esigi': int(float(self.var_otomatik_ters_cevirme_esigi.get())),
+            'otomatik_ters_cevirme': self.var_otomatik_ters_cevirme.get(), 'otomatik_ters_cevirme_esigi': int(float(self.var_otomatik_ters_cevirme_esigi.get())),
             'renk_alt_sinir_h': int(self.var_h_min.get()), 'renk_alt_sinir_s': int(self.var_s_min.get()), 'renk_alt_sinir_v': int(self.var_v_min.get()),
             'renk_ust_sinir_h': int(self.var_h_max.get()), 'renk_ust_sinir_s': int(self.var_s_max.get()), 'renk_ust_sinir_v': int(self.var_v_max.get()),
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
