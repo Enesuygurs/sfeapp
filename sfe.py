@@ -19,18 +19,14 @@ from gui import GuiManager
 
 gui_queue = queue.Queue()
 is_paused = False
-son_normal_metin = ""
+son_metin = "" # DEĞİŞİKLİK: 'son_normal_metin' yerine 'son_metin'
 tray_icon = None
 translator = None
 icon_running = None
 icon_stopped = None
-ocr_izin_verildi = None # YENİ: Kontrol olayı
+ocr_izin_verildi = None
 
-def normalize_text(text):
-    text = text.lower()
-    text = re.sub(r'[^\w\s]', '', text)
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
+# --- DEĞİŞİKLİK: normalize_text fonksiyonu tamamen kaldırıldı. ---
 
 def register_hotkeys():
     keyboard.unhook_all()
@@ -39,11 +35,13 @@ def register_hotkeys():
     keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
 
 def toggle_pause(*args):
-    global is_paused, son_normal_metin
+    global is_paused, son_metin
     is_paused = not is_paused
+    status = "DURDURULDU" if is_paused else "BAŞLATILDI"
+    print(f"\n--- Çeviri {status} ---")
     gui_queue.put({'type': 'update_text', 'text': None})
     if is_paused:
-        son_normal_metin = ""
+        son_metin = ""
     update_tray_menu()
 
 def quit_program(*args):
@@ -75,7 +73,7 @@ def update_tray_menu():
     tray_icon.menu = new_menu
 
 def main_translation_loop():
-    global son_normal_metin, translator
+    global son_metin, translator
     try:
         translator = deepl.Translator(AYARLAR['api_anahtari'])
     except Exception as e:
@@ -83,16 +81,15 @@ def main_translation_loop():
         gui_queue.put({'type': 'show_message_error', 'title': get_lang('error_title_deepl'), 'body': get_lang('error_body_deepl_key')})
         translator = None
 
-    # Bu thread kendi mss objesini oluşturacak
     with mss.mss() as sct:
         while True:
             try:
-                # YENİ: Önizleme aracının çalışıp çalışmadığını kontrol et
                 if not ocr_izin_verildi.is_set():
                     time.sleep(0.2)
                     continue
 
                 if not is_paused:
+                    print("-" * 30)
                     if not os.path.exists(AYARLAR['tesseract_yolu']):
                         if not is_paused: toggle_pause()
                         gui_queue.put({'type': 'show_message_error', 'title': get_lang('error_tesseract_path_title'), 'body': get_lang('error_tesseract_path_body')})
@@ -102,11 +99,13 @@ def main_translation_loop():
 
                     bolge = {'top': AYARLAR['top'], 'left': AYARLAR['left'], 'width': AYARLAR['width'], 'height': AYARLAR['height']}
                     if bolge['width'] < 10 or bolge['height'] < 10:
+                        print("Tarama alanı seçilmemiş, bekleniyor...")
                         time.sleep(1)
                         continue
 
                     img = np.array(sct.grab(bolge))
                     isleme_modu = AYARLAR.get('isleme_modu', 'gri_esik')
+                    print(f"Mod: {isleme_modu}")
                     
                     if isleme_modu == 'renk_filtresi':
                         hsv_img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
@@ -114,35 +113,70 @@ def main_translation_loop():
                         lower_bound = np.array([AYARLAR['renk_alt_sinir_h'], AYARLAR['renk_alt_sinir_s'], AYARLAR['renk_alt_sinir_v']])
                         upper_bound = np.array([AYARLAR['renk_ust_sinir_h'], AYARLAR['renk_ust_sinir_s'], AYARLAR['renk_ust_sinir_v']])
                         mask = cv2.inRange(hsv_img, lower_bound, upper_bound)
-                        islenmis_img = mask
+                        islenmis_img = cv2.bitwise_not(mask)
+                        print("İşlem: Renk filtresi uygulandı ve Tesseract için ters çevrildi.")
                     else:
                         gri_img = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-                        if isleme_modu == 'adaptif_esik':
-                            islenmis_img = cv2.adaptiveThreshold(gri_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+                        ters_cevir = False
+                        if AYARLAR['otomatik_ters_cevirme']:
+                            h, w = gri_img.shape
+                            kose_boyutu = min(h, w) // 4
+                            kose_ortalamasi = np.mean([
+                                gri_img[0:kose_boyutu, 0:kose_boyutu],
+                                gri_img[0:kose_boyutu, w-kose_boyutu:w],
+                                gri_img[h-kose_boyutu:h, 0:kose_boyutu],
+                                gri_img[h-kose_boyutu:h, w-kose_boyutu:w]
+                            ])
+                            parlaklik_esigi = AYARLAR['otomatik_ters_cevirme_esigi']
+                            print(f"Otomatik Ters Çevirme: Köşe parlaklığı = {kose_ortalamasi:.2f} (Eşik: {parlaklik_esigi})")
+                            if kose_ortalamasi > parlaklik_esigi:
+                                ters_cevir = True
+                                print("İşlem: Açık zemin tespit edildi, Tesseract için ters çevirme (BINARY) uygulanacak.")
+                            else:
+                                print("İşlem: Koyu zemin tespit edildi, Tesseract için normal (BINARY_INV) uygulanacak.")
                         else:
-                            _, islenmis_img = cv2.threshold(gri_img, AYARLAR['esik_degeri'], 255, cv2.THRESH_BINARY)
-                    
+                            print("İşlem: Otomatik ters çevirme kapalı.")
+
+                        if isleme_modu == 'adaptif_esik':
+                            binary_type = cv2.THRESH_BINARY if ters_cevir else cv2.THRESH_BINARY_INV
+                            islenmis_img = cv2.adaptiveThreshold(gri_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, binary_type, 11, 2)
+                        else:
+                            binary_type = cv2.THRESH_BINARY if ters_cevir else cv2.THRESH_BINARY_INV
+                            _, islenmis_img = cv2.threshold(gri_img, AYARLAR['esik_degeri'], 255, binary_type)
+
                     metin = pytesseract.image_to_string(islenmis_img, lang='eng')
                     temiz_metin = metin.strip().replace('\n', ' ')
+                    print(f"OCR Ham Sonuç: '{temiz_metin}'")
 
                     if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
-                        yeni_normal_metin = normalize_text(temiz_metin)
-                        if yeni_normal_metin:
-                            benzerlik = SequenceMatcher(None, yeni_normal_metin, son_normal_metin).ratio()
-                            if benzerlik < AYARLAR['kaynak_metin_benzerlik_esigi']:
-                                son_normal_metin = yeni_normal_metin
-                                if translator:
-                                    try:
+                        print(f"Filtre: Minimum uzunluk ({AYARLAR['kaynak_metin_min_uzunluk']}) geçildi.")
+                        
+                        # --- DEĞİŞİKLİK: Karşılaştırma artık ham metin üzerinden yapılıyor ---
+                        benzerlik = SequenceMatcher(None, temiz_metin, son_metin).ratio()
+                        print(f"Benzerlik: {benzerlik:.2f} (Eşik: {AYARLAR['kaynak_metin_benzerlik_esigi']})")
+                        
+                        if benzerlik < AYARLAR['kaynak_metin_benzerlik_esigi']:
+                            print(">>> KARAR: YENİ METİN! Çeviriye gönderiliyor...")
+                            son_metin = temiz_metin
+                            if translator:
+                                try:
+                                    if not is_paused:
+                                        # --- DEĞİŞİKLİK: API'ye de ham metin gönderiliyor ---
+                                        cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
+                                        print(f"API Sonucu: '{cevirilmis.text}'")
                                         if not is_paused:
-                                            cevirilmis = translator.translate_text(yeni_normal_metin, target_lang=AYARLAR['hedef_dil'])
-                                            if not is_paused:
-                                                gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
-                                    except Exception as e:
-                                        print(f"Çeviri hatası: {e}")
-                                        if not is_paused:
-                                            gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
-                    elif son_normal_metin:
-                        son_normal_metin = ""
+                                            gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
+                                except Exception as e:
+                                    print(f"Çeviri hatası: {e}")
+                                    if not is_paused:
+                                        gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
+                        else:
+                            print(">>> KARAR: Benzer metin, çeviri atlanıyor.")
+                    elif temiz_metin:
+                         print(f"Filtre: Minimum uzunluk ({AYARLAR['kaynak_metin_min_uzunluk']}) geçilemedi.")
+                    elif son_metin:
+                        print(">>> KARAR: Ekranda metin yok, arayüz temizleniyor.")
+                        son_metin = ""
                         gui_queue.put({'type': 'update_text', 'text': ""})
                 
                 time.sleep(AYARLAR['kontrol_araligi'])
@@ -152,7 +186,7 @@ def main_translation_loop():
 
 if __name__ == "__main__":
     ocr_izin_verildi = threading.Event()
-    ocr_izin_verildi.set() # Başlangıçta izin verili
+    ocr_izin_verildi.set()
 
     pytesseract.pytesseract.tesseract_cmd = AYARLAR['tesseract_yolu']
     is_paused = not AYARLAR['baslangicta_baslat'] or AYARLAR['width'] < 10 or AYARLAR['height'] < 10
@@ -180,6 +214,7 @@ if __name__ == "__main__":
     
     update_tray_menu()
     
+    print("Uygulama başlatıldı. Sistem tepsisi ikonunu kontrol edin.")
     tray_icon.run()
 
     os._exit(0)

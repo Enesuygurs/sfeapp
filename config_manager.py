@@ -35,7 +35,7 @@ def arayuz_dilini_yukle(dil_kodu):
 def ayarlari_kaydet():
     config['Genel'] = {'tesseract_yolu': AYARLAR['tesseract_yolu'], 'api_anahtari': AYARLAR['api_anahtari'], 'arayuz_dili': AYARLAR['arayuz_dili'], 'hedef_dil': AYARLAR['hedef_dil'], 'baslangicta_baslat': str(AYARLAR['baslangicta_baslat'])}
     config['Bolge'] = {'top': str(AYARLAR['top']), 'left': str(AYARLAR['left']), 'width': str(AYARLAR['width']), 'height': str(AYARLAR['height'])}
-    config['OCR'] = {'isleme_modu': AYARLAR['isleme_modu'], 'esik_degeri': str(AYARLAR['esik_degeri']), 'renk_alt_sinir_h': str(AYARLAR['renk_alt_sinir_h']), 'renk_alt_sinir_s': str(AYARLAR['renk_alt_sinir_s']), 'renk_alt_sinir_v': str(AYARLAR['renk_alt_sinir_v']), 'renk_ust_sinir_h': str(AYARLAR['renk_ust_sinir_h']), 'renk_ust_sinir_s': str(AYARLAR['renk_ust_sinir_s']), 'renk_ust_sinir_v': str(AYARLAR['renk_ust_sinir_v'])}
+    config['OCR'] = {'isleme_modu': AYARLAR['isleme_modu'], 'esik_degeri': str(AYARLAR['esik_degeri']), 'otomatik_ters_cevirme': str(AYARLAR['otomatik_ters_cevirme']), 'otomatik_ters_cevirme_esigi': str(AYARLAR['otomatik_ters_cevirme_esigi']), 'renk_alt_sinir_h': str(AYARLAR['renk_alt_sinir_h']), 'renk_alt_sinir_s': str(AYARLAR['renk_alt_sinir_s']), 'renk_alt_sinir_v': str(AYARLAR['renk_alt_sinir_v']), 'renk_ust_sinir_h': str(AYARLAR['renk_ust_sinir_h']), 'renk_ust_sinir_s': str(AYARLAR['renk_ust_sinir_s']), 'renk_ust_sinir_v': str(AYARLAR['renk_ust_sinir_v'])}
     config['Arayuz'] = {'font_boyutu': str(AYARLAR['font_boyutu']), 'font_rengi': AYARLAR['font_rengi'], 'arka_plan_rengi': AYARLAR['arka_plan_rengi'], 'seffaflik': str(AYARLAR['seffaflik']), 'ekran_ust_bosluk': str(AYARLAR['ekran_ust_bosluk']), 'kontrol_araligi': str(AYARLAR['kontrol_araligi']), 'ceviri_omru': str(AYARLAR['ceviri_omru']), 'kaynak_metin_benzerlik_esigi': str(AYARLAR['kaynak_metin_benzerlik_esigi']), 'kaynak_metin_min_uzunluk': str(AYARLAR['kaynak_metin_min_uzunluk'])}
     config['Kisayollar'] = {'alan_sec': AYARLAR['alan_sec'], 'durdur_devam_et': AYARLAR['durdur_devam_et'], 'programi_kapat': AYARLAR['programi_kapat']}
     with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile: config.write(configfile)
@@ -47,7 +47,7 @@ def ayarlari_yukle():
     if not os.path.exists(CONFIG_DOSYASI):
         config['Genel'] = {'tesseract_yolu': '', 'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True'}
         config['Bolge'] = {'top': '0', 'left': '0', 'width': '0', 'height': '0'}
-        config['OCR'] = {'isleme_modu': 'renk_filtresi', 'esik_degeri': '180', 'renk_alt_sinir_h': '0', 'renk_alt_sinir_s': '0', 'renk_alt_sinir_v': '180', 'renk_ust_sinir_h': '180', 'renk_ust_sinir_s': '30', 'renk_ust_sinir_v': '255'}
+        config['OCR'] = {'isleme_modu': 'renk_filtresi', 'esik_degeri': '180', 'otomatik_ters_cevirme': 'True', 'otomatik_ters_cevirme_esigi': '127', 'renk_alt_sinir_h': '0', 'renk_alt_sinir_s': '0', 'renk_alt_sinir_v': '180', 'renk_ust_sinir_h': '180', 'renk_ust_sinir_s': '30', 'renk_ust_sinir_v': '255'}
         config['Arayuz'] = {'font_boyutu': '20', 'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.4', 'ceviri_omru': '3.0', 'kaynak_metin_benzerlik_esigi': '0.9', 'kaynak_metin_min_uzunluk': '3'}
         config['Kisayollar'] = {'alan_sec': 'f8', 'durdur_devam_et': 'f9', 'programi_kapat': 'f10'}
         with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile: config.write(configfile)
@@ -57,8 +57,8 @@ def ayarlari_yukle():
         'baslangicta_baslat': config.getboolean('Genel', 'baslangicta_baslat', fallback=True), 'arayuz_dili': config.get('Genel', 'arayuz_dili', fallback='TR'),
         'hedef_dil': config.get('Genel', 'hedef_dil', fallback='TR'),
         'top': config.getint('Bolge', 'top', fallback=0), 'left': config.getint('Bolge', 'left', fallback=0), 'width': config.getint('Bolge', 'width', fallback=0), 'height': config.getint('Bolge', 'height', fallback=0),
-        'isleme_modu': config.get('OCR', 'isleme_modu', fallback='gri_esik'),
-        'esik_degeri': config.getint('OCR', 'esik_degeri', fallback=180),
+        'isleme_modu': config.get('OCR', 'isleme_modu', fallback='gri_esik'), 'esik_degeri': config.getint('OCR', 'esik_degeri', fallback=180),
+        'otomatik_ters_cevirme': config.getboolean('OCR', 'otomatik_ters_cevirme', fallback=True), 'otomatik_ters_cevirme_esigi': config.getint('OCR', 'otomatik_ters_cevirme_esigi', fallback=127),
         'renk_alt_sinir_h': config.getint('OCR', 'renk_alt_sinir_h', fallback=0), 'renk_alt_sinir_s': config.getint('OCR', 'renk_alt_sinir_s', fallback=0), 'renk_alt_sinir_v': config.getint('OCR', 'renk_alt_sinir_v', fallback=180),
         'renk_ust_sinir_h': config.getint('OCR', 'renk_ust_sinir_h', fallback=180), 'renk_ust_sinir_s': config.getint('OCR', 'renk_ust_sinir_s', fallback=30), 'renk_ust_sinir_v': config.getint('OCR', 'renk_ust_sinir_v', fallback=255),
         'font_boyutu': config.getint('Arayuz', 'font_boyutu', fallback=20), 'font_rengi': config.get('Arayuz', 'font_rengi', fallback='white'), 'arka_plan_rengi': config.get('Arayuz', 'arka_plan_rengi', fallback='black'),

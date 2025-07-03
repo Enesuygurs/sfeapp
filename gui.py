@@ -1,3 +1,5 @@
+# gui.py
+
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog, colorchooser
 from ttkthemes import ThemedTk
@@ -72,6 +74,7 @@ class AyarlarPenceresi(tk.Toplevel):
             self.iconphoto(False, tk.PhotoImage(file=icon_path))
         except Exception as e: print(f"HATA: icon.png yüklenemedi: {e}")
 
+        # Değişkenler
         self.var_tesseract = tk.StringVar(self, value=AYARLAR['tesseract_yolu'])
         self.var_api_key = tk.StringVar(self, value=AYARLAR['api_anahtari'])
         self.var_hedef_dil = tk.StringVar(self, value=get_key_from_value(DESTEKLENEN_HEDEF_DILLER, AYARLAR['hedef_dil']))
@@ -88,6 +91,8 @@ class AyarlarPenceresi(tk.Toplevel):
         self.var_kaynak_min_uzunluk = tk.StringVar(self, value=str(AYARLAR['kaynak_metin_min_uzunluk']))
         self.var_isleme_modu = tk.StringVar(self, value=AYARLAR['isleme_modu'])
         self.var_esik_degeri = tk.StringVar(self, value=str(AYARLAR['esik_degeri']))
+        self.var_otomatik_ters_cevirme = tk.BooleanVar(self, value=AYARLAR['otomatik_ters_cevirme'])
+        self.var_otomatik_ters_cevirme_esigi = tk.StringVar(self, value=str(AYARLAR['otomatik_ters_cevirme_esigi']))
         self.var_h_min = tk.StringVar(self, value=str(AYARLAR['renk_alt_sinir_h']))
         self.var_s_min = tk.StringVar(self, value=str(AYARLAR['renk_alt_sinir_s']))
         self.var_v_min = tk.StringVar(self, value=str(AYARLAR['renk_alt_sinir_v']))
@@ -140,9 +145,17 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Combobox(frame, textvariable=self.var_isleme_modu, values=modlar, state="readonly").grid(row=0, column=1, sticky='ew', columnspan=2)
         
         lf_gri = ttk.LabelFrame(frame, text=get_lang('settings_ocr_grayscale_threshold'))
-        lf_gri.grid(row=1, column=0, columnspan=3, sticky='ew', padx=5, pady=5)
-        ttk.Label(lf_gri, text=get_lang('settings_ocr_threshold_value')).pack(side='left', padx=5, pady=5)
-        ttk.Entry(lf_gri, textvariable=self.var_esik_degeri, validate="key", validatecommand=self.validate_integer).pack(side='left', padx=5, pady=5, fill='x', expand=True)
+        lf_gri.grid(row=1, column=0, columnspan=3, sticky='ew', padx=5, pady=(10,5))
+        ttk.Checkbutton(lf_gri, text=get_lang('settings_ocr_auto_invert'), variable=self.var_otomatik_ters_cevirme).pack(side='left', padx=5)
+        
+        invert_threshold_frame = ttk.Frame(lf_gri)
+        invert_threshold_frame.pack(side='left', fill='x', expand=True, padx=5)
+        ttk.Label(invert_threshold_frame, text=get_lang('settings_ocr_auto_invert_threshold')).pack(side='left')
+        ttk.Scale(invert_threshold_frame, from_=0, to=255, orient='horizontal', variable=self.var_otomatik_ters_cevirme_esigi).pack(side='left', fill='x', expand=True, padx=5)
+        ttk.Label(invert_threshold_frame, textvariable=self.var_otomatik_ters_cevirme_esigi, width=3).pack(side='left')
+
+        ttk.Label(lf_gri, text=get_lang('settings_ocr_threshold_value')).pack(side='left', padx=(10,5), pady=5)
+        ttk.Entry(lf_gri, textvariable=self.var_esik_degeri, width=5, validate="key", validatecommand=self.validate_integer).pack(side='left', padx=5, pady=5)
 
         lf_renk = ttk.LabelFrame(frame, text=get_lang('settings_ocr_color_filter'))
         lf_renk.grid(row=2, column=0, columnspan=3, sticky='ew', padx=5, pady=5)
@@ -256,6 +269,8 @@ class AyarlarPenceresi(tk.Toplevel):
             'seffaflik': float(self.var_seffaflik.get()), 'ekran_ust_bosluk': int(self.var_ust_bosluk.get()), 'kontrol_araligi': float(self.var_kontrol_araligi.get()),
             'ceviri_omru': float(self.var_ceviri_omru.get()), 'kaynak_metin_benzerlik_esigi': float(self.var_kaynak_benzerlik_esigi.get()), 'kaynak_metin_min_uzunluk': int(self.var_kaynak_min_uzunluk.get()),
             'isleme_modu': self.var_isleme_modu.get(), 'esik_degeri': int(self.var_esik_degeri.get()),
+            'otomatik_ters_cevirme': self.var_otomatik_ters_cevirme.get(),
+            'otomatik_ters_cevirme_esigi': int(float(self.var_otomatik_ters_cevirme_esigi.get())),
             'renk_alt_sinir_h': int(self.var_h_min.get()), 'renk_alt_sinir_s': int(self.var_s_min.get()), 'renk_alt_sinir_v': int(self.var_v_min.get()),
             'renk_ust_sinir_h': int(self.var_h_max.get()), 'renk_ust_sinir_s': int(self.var_s_max.get()), 'renk_ust_sinir_v': int(self.var_v_max.get()),
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()

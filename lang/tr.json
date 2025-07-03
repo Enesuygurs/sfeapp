@@ -54,5 +54,7 @@
   "settings_ocr_color_filter": "Renk Filtresi (HSV)",
   "settings_ocr_hsv_guide": "Altyazı rengini tanımlayın (Google 'color picker to hsv').",
   "settings_ocr_lower_bound": "Alt Sınır",
-  "settings_ocr_upper_bound": "Üst Sınır"
+  "settings_ocr_upper_bound": "Üst Sınır",
+    "settings_ocr_auto_invert": "Otomatik Ters Çevir (Açık/Koyu Zemin)",
+  "settings_ocr_auto_invert_threshold": "Parlaklık Eşiği:"
 }
