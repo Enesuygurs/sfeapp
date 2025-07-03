@@ -19,14 +19,12 @@ from gui import GuiManager
 
 gui_queue = queue.Queue()
 is_paused = False
-son_metin = "" # DEĞİŞİKLİK: 'son_normal_metin' yerine 'son_metin'
+son_metin = ""
 tray_icon = None
 translator = None
 icon_running = None
 icon_stopped = None
 ocr_izin_verildi = None
-
-# --- DEĞİŞİKLİK: normalize_text fonksiyonu tamamen kaldırıldı. ---
 
 def register_hotkeys():
     keyboard.unhook_all()
@@ -40,8 +38,6 @@ def toggle_pause(*args):
     status = "DURDURULDU" if is_paused else "BAŞLATILDI"
     print(f"\n--- Çeviri {status} ---")
     gui_queue.put({'type': 'update_text', 'text': None})
-    if is_paused:
-        son_metin = ""
     update_tray_menu()
 
 def quit_program(*args):
@@ -144,14 +140,14 @@ def main_translation_loop():
                             binary_type = cv2.THRESH_BINARY if ters_cevir else cv2.THRESH_BINARY_INV
                             _, islenmis_img = cv2.threshold(gri_img, AYARLAR['esik_degeri'], 255, binary_type)
 
-                    metin = pytesseract.image_to_string(islenmis_img, lang='eng')
-                    temiz_metin = metin.strip().replace('\n', ' ')
+                    okunan_metin = pytesseract.image_to_string(islenmis_img, lang='eng')
+                    temiz_metin = okunan_metin.strip().replace('\n', ' ')
                     print(f"OCR Ham Sonuç: '{temiz_metin}'")
 
                     if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
                         print(f"Filtre: Minimum uzunluk ({AYARLAR['kaynak_metin_min_uzunluk']}) geçildi.")
                         
-                        # --- DEĞİŞİKLİK: Karşılaştırma artık ham metin üzerinden yapılıyor ---
+                        print(f"Karşılaştırılıyor:\nYENİ: '{temiz_metin}'\nESKİ: '{son_metin}'")
                         benzerlik = SequenceMatcher(None, temiz_metin, son_metin).ratio()
                         print(f"Benzerlik: {benzerlik:.2f} (Eşik: {AYARLAR['kaynak_metin_benzerlik_esigi']})")
                         
@@ -161,9 +157,13 @@ def main_translation_loop():
                             if translator:
                                 try:
                                     if not is_paused:
-                                        # --- DEĞİŞİKLİK: API'ye de ham metin gönderiliyor ---
+                                        print(f"API'ye Gönderiliyor: '{temiz_metin}'") # API'ye gönderilen metni logla
                                         cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
-                                        print(f"API Sonucu: '{cevirilmis.text}'")
+                                        
+                                        # --- YENİ LOGLAMA: Çeviri sonucunu göster ---
+                                        print(f"ÇEVİRİ SONUCU: '{cevirilmis.text}'")
+                                        # --- BİTİŞ ---
+
                                         if not is_paused:
                                             gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
                                 except Exception as e:
