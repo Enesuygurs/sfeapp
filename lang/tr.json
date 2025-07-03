@@ -45,5 +45,6 @@
   "error_tesseract_path_title": "Tesseract Yolu Hatası",
   "error_tesseract_path_body": "Tesseract yolu bulunamadı veya geçersiz. Lütfen Ayarlar > Genel sekmesinden Tesseract.exe dosyasının konumunu doğru bir şekilde belirtin.",
   "error_title_hotkey_conflict": "Kısayol Çakışması",
-  "error_body_hotkey_conflict": "Lütfen her işlev için farklı bir kısayol tuşu atayın. Aynı tuş birden fazla işlev için kullanılamaz."
+  "error_body_hotkey_conflict": "Lütfen her işlev için farklı bir kısayol tuşu atayın. Aynı tuş birden fazla işlev için kullanılamaz.",
+    "settings_source_min_length": "Kaynak Metin Min. Uzunluk"
 }

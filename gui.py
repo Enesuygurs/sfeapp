@@ -79,9 +79,11 @@ class AyarlarPenceresi(tk.Toplevel):
         self.var_bg_rengi = tk.StringVar(self, value=AYARLAR['arka_plan_rengi'])
         self.var_seffaflik = tk.StringVar(self, value=str(AYARLAR['seffaflik']))
         self.var_ust_bosluk = tk.StringVar(self, value=str(AYARLAR['ekran_ust_bosluk']))
+        # --- DEĞİŞİKLİK: kontrol_araligi geri eklendi ---
         self.var_kontrol_araligi = tk.StringVar(self, value=str(AYARLAR['kontrol_araligi']))
         self.var_ceviri_omru = tk.StringVar(self, value=str(AYARLAR['ceviri_omru']))
-        self.var_benzerlik_orani = tk.StringVar(self, value=str(AYARLAR['benzerlik_orani_esigi']))
+        self.var_kaynak_benzerlik_esigi = tk.StringVar(self, value=str(AYARLAR['kaynak_metin_benzerlik_esigi'])) # YENİ AYAR
+        self.var_kaynak_min_uzunluk = tk.StringVar(self, value=str(AYARLAR['kaynak_metin_min_uzunluk'])) # YENİ AYAR
         self.var_alan_sec = tk.StringVar(self, value=AYARLAR['alan_sec'])
         self.var_durdur_devam = tk.StringVar(self, value=AYARLAR['durdur_devam_et'])
         self.var_kapat = tk.StringVar(self, value=AYARLAR['programi_kapat'])
@@ -118,9 +120,11 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Label(frame, text=get_lang('settings_bg_color')).grid(row=2, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_bg_rengi, width=40).grid(row=2, column=1, sticky='ew'); ttk.Button(frame, text="...", command=lambda v=self.var_bg_rengi: self.renk_sec(v), width=3).grid(row=2, column=2, sticky='ew', padx=(5,0))
         ttk.Label(frame, text=get_lang('settings_opacity')).grid(row=3, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_seffaflik, validate="key", validatecommand=self.validate_float).grid(row=3, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_top_margin')).grid(row=4, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_ust_bosluk, validate="key", validatecommand=self.validate_integer).grid(row=4, column=1, columnspan=2, sticky='ew')
+        # --- DEĞİŞİKLİK: kontrol_araligi geri eklendi ---
         ttk.Label(frame, text=get_lang('settings_scan_interval')).grid(row=5, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_kontrol_araligi, validate="key", validatecommand=self.validate_float).grid(row=5, column=1, columnspan=2, sticky='ew')
+        ttk.Label(frame, text=get_lang('settings_source_min_length')).grid(row=8, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_kaynak_min_uzunluk, validate="key", validatecommand=self.validate_integer).grid(row=8, column=1, columnspan=2, sticky='ew')
         ttk.Label(frame, text=get_lang('settings_translation_lifespan')).grid(row=6, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_ceviri_omru, validate="key", validatecommand=self.validate_float).grid(row=6, column=1, columnspan=2, sticky='ew')
-        ttk.Label(frame, text=get_lang('settings_similarity_threshold')).grid(row=7, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_benzerlik_orani, validate="key", validatecommand=self.validate_float).grid(row=7, column=1, columnspan=2, sticky='ew')
+        ttk.Label(frame, text=get_lang('settings_source_similarity_threshold')).grid(row=7, column=0, sticky='w', pady=2); ttk.Entry(frame, textvariable=self.var_kaynak_benzerlik_esigi, validate="key", validatecommand=self.validate_float).grid(row=7, column=1, columnspan=2, sticky='ew')
     def populate_hotkeys_tab(self, frame):
         self.create_hotkey_entry(frame, 'settings_hotkey_select', self.var_alan_sec, 0); self.create_hotkey_entry(frame, 'settings_hotkey_pause', self.var_durdur_devam, 1); self.create_hotkey_entry(frame, 'settings_hotkey_exit', self.var_kapat, 2)
         ttk.Label(frame, text=get_lang('settings_hotkey_info')).grid(row=3, column=0, columnspan=3, sticky='w', pady=(10,0))
@@ -158,12 +162,15 @@ class AyarlarPenceresi(tk.Toplevel):
         try: self.winfo_rgb(yeni_bg_rengi)
         except tk.TclError: messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_bg_color_invalid", color=yeni_bg_rengi), parent=self); return
         eski_ayarlar = AYARLAR.copy()
+        # --- DEĞİŞİKLİK: kontrol_araligi geri eklendi ---
         yeni_ayarlar = {
             'baslangicta_baslat': self.var_baslangicta_baslat.get(), 'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
             'hedef_dil': DESTEKLENEN_HEDEF_DILLER.get(self.var_hedef_dil.get()), 'arayuz_dili': get_key_from_value(DESTEKLENEN_ARAYUZ_DILLERI, self.var_arayuz_dili.get()),
             'font_boyutu': int(self.var_font_boyutu.get()), 'font_rengi': yeni_font_rengi, 'arka_plan_rengi': yeni_bg_rengi,
             'seffaflik': float(self.var_seffaflik.get()), 'ekran_ust_bosluk': int(self.var_ust_bosluk.get()), 'kontrol_araligi': float(self.var_kontrol_araligi.get()),
-            'ceviri_omru': float(self.var_ceviri_omru.get()), 'benzerlik_orani_esigi': float(self.var_benzerlik_orani.get()),
+            'ceviri_omru': float(self.var_ceviri_omru.get()),
+            'kaynak_metin_benzerlik_esigi': float(self.var_kaynak_benzerlik_esigi.get()), # YENİ AYAR
+            'kaynak_metin_min_uzunluk': int(self.var_kaynak_min_uzunluk.get()), # YENİ AYAR
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
         AYARLAR.update(yeni_ayarlar)

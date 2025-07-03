@@ -1,3 +1,5 @@
+# sfe.py
+
 import time
 import threading
 import queue
@@ -10,17 +12,25 @@ import deepl
 import keyboard
 import pystray
 from PIL import Image
+import hashlib
+import re
 from difflib import SequenceMatcher
 from config_manager import AYARLAR, get_lang, get_resource_path, arayuz_dilini_yukle
 from gui import GuiManager
 
 gui_queue = queue.Queue()
 is_paused = False
-son_metin = ""
+son_normal_metin = ""
 tray_icon = None
 translator = None
 icon_running = None
 icon_stopped = None
+
+def normalize_text(text):
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
 def register_hotkeys():
     keyboard.unhook_all()
@@ -29,11 +39,11 @@ def register_hotkeys():
     keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
 
 def toggle_pause(*args):
-    global is_paused, son_metin
+    global is_paused, son_normal_metin
     is_paused = not is_paused
     gui_queue.put({'type': 'update_text', 'text': None})
     if is_paused:
-        son_metin = ""
+        son_normal_metin = ""
     update_tray_menu()
 
 def quit_program(*args):
@@ -67,7 +77,7 @@ def update_tray_menu():
     tray_icon.menu = new_menu
 
 def main_translation_loop():
-    global son_metin, translator
+    global son_normal_metin, translator
     try:
         translator = deepl.Translator(AYARLAR['api_anahtari'])
     except Exception as e:
@@ -98,22 +108,28 @@ def main_translation_loop():
                 metin = pytesseract.image_to_string(islenmis_img, lang='eng')
                 temiz_metin = metin.strip().replace('\n', ' ')
 
-                if temiz_metin and SequenceMatcher(None, temiz_metin, son_metin).ratio() < AYARLAR['benzerlik_orani_esigi']:
-                    son_metin = temiz_metin
-                    if translator:
-                        try:
-                            if not is_paused:
-                                cevirilmis = translator.translate_text(temiz_metin, target_lang=AYARLAR['hedef_dil'])
-                                if not is_paused:
-                                    gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
-                        except Exception as e:
-                            print(f"Çeviri hatası: {e}")
-                            if not is_paused:
-                                gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
-                elif not temiz_metin and son_metin:
-                    son_metin = ""
+                if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
+                    yeni_normal_metin = normalize_text(temiz_metin)
+                    if yeni_normal_metin:
+                        benzerlik = SequenceMatcher(None, yeni_normal_metin, son_normal_metin).ratio()
+                        if benzerlik < AYARLAR['kaynak_metin_benzerlik_esigi']:
+                            son_normal_metin = yeni_normal_metin
+                            if translator:
+                                try:
+                                    if not is_paused:
+                                        # --- DEĞİŞİKLİK BURADA: API'ye TEMİZLENMİŞ METNİ GÖNDERİYORUZ ---
+                                        cevirilmis = translator.translate_text(yeni_normal_metin, target_lang=AYARLAR['hedef_dil'])
+                                        if not is_paused:
+                                            gui_queue.put({'type': 'update_text', 'text': cevirilmis.text})
+                                except Exception as e:
+                                    print(f"Çeviri hatası: {e}")
+                                    if not is_paused:
+                                        gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
+                elif son_normal_metin:
+                    son_normal_metin = ""
                     gui_queue.put({'type': 'update_text', 'text': ""})
-            time.sleep(AYARLAR.get('kontrol_araligi', 0.5))
+            
+            time.sleep(AYARLAR['kontrol_araligi'])
         except Exception as e:
             print(f"Ana döngüde beklenmedik hata: {e}")
             time.sleep(2)
