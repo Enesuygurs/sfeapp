@@ -42,15 +42,8 @@
   "settings_use_gpu": "GPU hızlandırmasını kullan (NVIDIA & CUDA gerekli)",
   "settings_scan_interval_info": "(sn, düşük değerler CPU'yu yorar)",
   "info_gpu_change_restart": "GPU ayarı değiştirildi. Değişikliğin etkili olması için lütfen uygulamayı yeniden başlatın.",
-    "settings_tab_ocr": "OCR Ayarları",
-  "settings_ocr_mode": "Görüntü İşleme Modu",
-  "settings_ocr_mode_color": "Renk Filtresi (Önerilen)",
-  "settings_ocr_mode_threshold": "Basit Eşikleme (Hızlı)",
-  "settings_ocr_color_settings": "Renk Filtresi Ayarları (HSV)",
-  "settings_ocr_color_info": "Altyazı rengini (beyaz, sarı vb.) izole etmek için kullanılır.",
-  "settings_ocr_min_values": "Min Değerler",
-  "settings_ocr_max_values": "Max Değerler",
-  "settings_ocr_threshold_settings": "Basit Eşikleme Ayarı",
-    "error_tesseract_path_title": "Tesseract Yolu Hatası",
-  "error_tesseract_path_body": "Tesseract yolu bulunamadı veya geçersiz. Lütfen Ayarlar > Genel sekmesinden Tesseract.exe dosyasının konumunu doğru bir şekilde belirtin."
+  "error_tesseract_path_title": "Tesseract Yolu Hatası",
+  "error_tesseract_path_body": "Tesseract yolu bulunamadı veya geçersiz. Lütfen Ayarlar > Genel sekmesinden Tesseract.exe dosyasının konumunu doğru bir şekilde belirtin.",
+  "error_title_hotkey_conflict": "Kısayol Çakışması",
+  "error_body_hotkey_conflict": "Lütfen her işlev için farklı bir kısayol tuşu atayın. Aynı tuş birden fazla işlev için kullanılamaz."
 }

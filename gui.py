@@ -183,6 +183,25 @@ class AyarlarPenceresi(tk.Toplevel):
         if renk and renk[1]: var.set(renk[1])
 
     def kaydet(self):
+        # --- YENİ KISAYOL KONTROLÜ BAŞLANGICI ---
+        # Kısayol değişkenlerinden değerleri alalım.
+        hotkeys = [
+            self.var_alan_sec.get(),
+            self.var_durdur_devam.get(),
+            self.var_kapat.get()
+        ]
+
+        # Eğer listedeki eleman sayısı, listenin set'e çevrilmiş halinin
+        # eleman sayısından farklıysa, en az bir tekrar var demektir.
+        if len(hotkeys) != len(set(hotkeys)):
+            messagebox.showerror(
+                get_lang("error_title_hotkey_conflict"), 
+                get_lang("error_body_hotkey_conflict"), 
+                parent=self
+            )
+            return  # Kaydetme işlemini burada durdur.
+        # --- YENİ KISAYOL KONTROLÜ BİTİŞİ ---
+
         try:
             seffaflik_degeri = float(self.var_seffaflik.get())
             if not (0.1 <= seffaflik_degeri <= 1.0):

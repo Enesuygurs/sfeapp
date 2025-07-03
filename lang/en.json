@@ -39,5 +39,7 @@
   "info_settings_saved_body": "Settings saved successfully.",
   "settings_use_gpu": "Use GPU acceleration (requires NVIDIA & CUDA)",
   "settings_scan_interval_info": "(sec, lower values use more CPU)",
-  "info_gpu_change_restart": "GPU setting changed. Please restart the application for the change to take effect."
+  "info_gpu_change_restart": "GPU setting changed. Please restart the application for the change to take effect.",
+  "error_title_hotkey_conflict": "Hotkey Conflict",
+  "error_body_hotkey_conflict": "Please assign a different hotkey for each function. The same key cannot be used for more than one function."
 }
