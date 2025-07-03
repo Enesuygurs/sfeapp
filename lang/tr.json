@@ -56,5 +56,6 @@
   "settings_ocr_lower_bound": "Alt Sınır",
   "settings_ocr_upper_bound": "Üst Sınır",
     "settings_ocr_auto_invert": "Otomatik Ters Çevir (Açık/Koyu Zemin)",
-  "settings_ocr_auto_invert_threshold": "Parlaklık Eşiği:"
+  "settings_ocr_auto_invert_threshold": "Parlaklık Eşiği:",
+  "settings_source_similarity_threshold": "Metinlerin Benzerlik Eşiği:"
 }
