@@ -379,11 +379,24 @@ class OverlayGUI(tk.Toplevel):
         self.wm_attributes("-transparentcolor", "gray15")
         self.config(bg="gray15")
         self.screen_width = self.winfo_screenwidth()
+        
         self.container = tk.Frame(self, bg='gray15')
         self.container.pack()
+
         self.active_translations = []
         self.translation_labels = []
         self.font_obj = font.Font()
+
+        # --- YENİ: Sürükleme için değişkenler ---
+        self._drag_start_y = 0
+        self.current_x = 0
+        self.current_y = AYARLAR['ekran_ust_bosluk']
+
+        # --- DEĞİŞİKLİK: Sürükleme olayları pencerenin kendisine bağlanıyor ---
+        self.container.bind("<ButtonPress-1>", self.on_drag_start)
+        self.container.bind("<B1-Motion>", self.on_drag_motion)
+        self.container.bind("<ButtonRelease-1>", self.on_drag_stop)
+        
         self.apply_settings()
         self.withdraw()
         self.after(100, self.update_display_loop)
@@ -397,6 +410,7 @@ class OverlayGUI(tk.Toplevel):
             slant='italic' if AYARLAR['font_italik'] else 'roman',
             underline=AYARLAR['font_alti_cizili']
         )
+        self.current_y = AYARLAR['ekran_ust_bosluk']
 
     def add_translation(self, text):
         if not text:
@@ -404,26 +418,60 @@ class OverlayGUI(tk.Toplevel):
             return
         self.active_translations.insert(0, {'text': text, 'death_time': time.time() + AYARLAR['ceviri_omru']})
 
+    def on_drag_start(self, event):
+        self._drag_start_y = event.y_root
+    
+    def on_drag_motion(self, event):
+        delta_y = event.y_root - self._drag_start_y
+        new_y = self.winfo_y() + delta_y
+        
+        new_y = max(0, min(new_y, self.winfo_screenheight() - self.winfo_height()))
+        
+        self.geometry(f"+{self.winfo_x()}+{new_y}")
+        self._drag_start_y = event.y_root
+
+    def on_drag_stop(self, event):
+        self.current_y = self.winfo_y()
+        AYARLAR['ekran_ust_bosluk'] = self.current_y
+        ayarlari_kaydet()
+        print(f"Yeni dikey konum kaydedildi: {self.current_y}")
+
     def update_display_loop(self):
         current_time = time.time()
         self.active_translations = [t for t in self.active_translations if t['death_time'] > current_time]
-        for label in self.translation_labels:
-            label.destroy()
-        self.translation_labels.clear()
-        if not self.active_translations:
-            self.withdraw()
-        else:
-            self.deiconify()
-            for translation in self.active_translations:
-                label = tk.Label(self.container, text=translation['text'],
-                                font=self.font_obj,
-                                fg=AYARLAR['font_rengi'], bg=AYARLAR['arka_plan_rengi'],
-                                wraplength=self.screen_width * 0.8, justify="center",
-                                padx=15, pady=5
-                               )
-                label.pack(pady=2)
-                self.translation_labels.append(label)
-            self.update_idletasks()
-            width, height = self.container.winfo_reqwidth(), self.container.winfo_reqheight()
-            self.geometry(f"{width}x{height}+{(self.screen_width - width) // 2}+{AYARLAR['ekran_ust_bosluk']}")
+        
+        # İçerik değişmiş mi kontrol et
+        current_label_texts = [label.cget("text") for label in self.translation_labels]
+        new_translation_texts = [t['text'] for t in self.active_translations]
+
+        if current_label_texts != new_translation_texts:
+            for label in self.translation_labels:
+                label.destroy()
+            self.translation_labels.clear()
+
+            if not self.active_translations:
+                self.withdraw()
+            else:
+                self.deiconify()
+                for translation in self.active_translations:
+                    label = tk.Label(self.container, text=translation['text'],
+                                    font=self.font_obj,
+                                    fg=AYARLAR['font_rengi'], bg=AYARLAR['arka_plan_rengi'],
+                                    wraplength=self.screen_width * 0.8, justify="center",
+                                    padx=15, pady=5
+                                   )
+                    label.pack(pady=2)
+                    # Sürükleme olaylarını etikete de bağlayarak daha geniş bir tutma alanı sağla
+                    label.bind("<ButtonPress-1>", self.on_drag_start)
+                    label.bind("<B1-Motion>", self.on_drag_motion)
+                    label.bind("<ButtonRelease-1>", self.on_drag_stop)
+                    self.translation_labels.append(label)
+
+                # --- DEĞİŞİKLİK: Konumlandırma mantığı basitleştirildi ---
+                self.update_idletasks()
+                width = self.container.winfo_reqwidth()
+                height = self.container.winfo_reqheight()
+                self.current_x = (self.screen_width - width) // 2
+                self.geometry(f"{width}x{height}+{self.current_x}+{self.current_y}")
+        
         self.after(100, self.update_display_loop)
