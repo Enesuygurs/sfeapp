@@ -72,7 +72,6 @@ class AyarlarPenceresi(tk.Toplevel):
             self.iconphoto(False, tk.PhotoImage(file=icon_path))
         except Exception as e: print(f"HATA: icon.png yüklenemedi: {e}")
 
-        # Değişkenler
         self.var_tesseract = tk.StringVar(self, value=AYARLAR['tesseract_yolu'])
         self.var_api_key = tk.StringVar(self, value=AYARLAR['api_anahtari'])
         self.var_hedef_dil = tk.StringVar(self, value=get_key_from_value(DESTEKLENEN_HEDEF_DILLER, AYARLAR['hedef_dil']))
@@ -104,7 +103,7 @@ class AyarlarPenceresi(tk.Toplevel):
         self.var_alan_sec = tk.StringVar(self, value=AYARLAR['alan_sec'])
         self.var_durdur_devam = tk.StringVar(self, value=AYARLAR['durdur_devam_et'])
         self.var_kapat = tk.StringVar(self, value=AYARLAR['programi_kapat'])
-        
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -117,7 +116,7 @@ class AyarlarPenceresi(tk.Toplevel):
         self.populate_ocr_tab(self.create_tab('settings_tab_ocr'))
         self.populate_interface_tab(self.create_tab('settings_tab_interface'))
         self.populate_hotkeys_tab(self.create_tab('settings_tab_hotkeys'))
-        
+
         button_frame = ttk.Frame(self)
         button_frame.pack(padx=10, pady=(0, 10), fill='x')
         ttk.Button(button_frame, text=get_lang('settings_button_save'), command=self.kaydet).pack(side='right', padx=5)
@@ -127,7 +126,7 @@ class AyarlarPenceresi(tk.Toplevel):
         if val == "" or val == ".": return True
         try: float(val); return True
         except ValueError: return False
-        
+
     def create_tab(self, lang_key):
         frame = ttk.Frame(self.notebook, padding="10"); self.notebook.add(frame, text=get_lang(lang_key)); return frame
 
@@ -146,13 +145,13 @@ class AyarlarPenceresi(tk.Toplevel):
 
         ttk.Label(frame, text=get_lang('settings_interface_language')).grid(row=3, column=0, sticky='w', padx=5, pady=5)
         ttk.Combobox(frame, textvariable=self.var_arayuz_dili, values=list(DESTEKLENEN_ARAYUZ_DILLERI.values()), state="readonly").grid(row=3, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
-        
+
         ttk.Label(frame, text=get_lang('settings_scan_interval')).grid(row=4, column=0, sticky='w', padx=5, pady=5)
         ttk.Entry(frame, textvariable=self.var_kontrol_araligi, validate="key", validatecommand=self.validate_float).grid(row=4, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
-        
+
         ttk.Label(frame, text=get_lang('settings_source_similarity_threshold')).grid(row=5, column=0, sticky='w', padx=5, pady=5)
         ttk.Entry(frame, textvariable=self.var_kaynak_benzerlik_esigi, validate="key", validatecommand=self.validate_float).grid(row=5, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
-        
+
         ttk.Label(frame, text=get_lang('settings_source_min_length')).grid(row=6, column=0, sticky='w', padx=5, pady=5)
         ttk.Entry(frame, textvariable=self.var_kaynak_min_uzunluk, validate="key", validatecommand=self.validate_integer).grid(row=6, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
 
@@ -163,11 +162,11 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Label(frame, text=get_lang('settings_ocr_mode')).grid(row=0, column=0, sticky='w', pady=5, padx=5)
         modlar = ["gri_esik", "adaptif_esik", "renk_filtresi"]
         ttk.Combobox(frame, textvariable=self.var_isleme_modu, values=modlar, state="readonly").grid(row=0, column=1, sticky='ew', columnspan=2, pady=5, padx=5)
-        
+
         lf_gri = ttk.LabelFrame(frame, text=get_lang('settings_ocr_grayscale_threshold'))
         lf_gri.grid(row=1, column=0, columnspan=3, sticky='ew', padx=5, pady=(10,5))
         ttk.Checkbutton(lf_gri, text=get_lang('settings_ocr_auto_invert'), variable=self.var_otomatik_ters_cevirme).pack(side='left', padx=5)
-        
+
         invert_threshold_frame = ttk.Frame(lf_gri)
         invert_threshold_frame.pack(side='left', fill='x', expand=True, padx=5)
         ttk.Label(invert_threshold_frame, text=get_lang('settings_ocr_auto_invert_threshold')).pack(side='left')
@@ -180,10 +179,10 @@ class AyarlarPenceresi(tk.Toplevel):
         lf_renk = ttk.LabelFrame(frame, text=get_lang('settings_ocr_color_filter'))
         lf_renk.grid(row=2, column=0, columnspan=3, sticky='ew', padx=5, pady=5)
         ttk.Label(lf_renk, text=get_lang('settings_ocr_hsv_guide')).pack(fill='x', padx=5, pady=(0,5))
-        
+
         hsv_frame = ttk.Frame(lf_renk)
         hsv_frame.pack(fill='x', expand=True, padx=5, pady=5)
-        
+
         hsv_frame.columnconfigure(1, weight=1)
         hsv_frame.columnconfigure(2, weight=1)
         hsv_frame.columnconfigure(3, weight=1)
@@ -192,22 +191,22 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Label(hsv_frame, text="H (Renk)").grid(row=0, column=1)
         ttk.Label(hsv_frame, text="S (Doygunluk)").grid(row=0, column=2)
         ttk.Label(hsv_frame, text="V (Parlaklık)").grid(row=0, column=3)
-        
+
         ttk.Label(hsv_frame, text=get_lang('settings_ocr_lower_bound')).grid(row=1, column=0, sticky='w')
         ttk.Entry(hsv_frame, textvariable=self.var_h_min, width=5, validate="key", validatecommand=self.validate_integer).grid(row=1, column=1, sticky='ew')
         ttk.Entry(hsv_frame, textvariable=self.var_s_min, width=5, validate="key", validatecommand=self.validate_integer).grid(row=1, column=2, sticky='ew', padx=5)
         ttk.Entry(hsv_frame, textvariable=self.var_v_min, width=5, validate="key", validatecommand=self.validate_integer).grid(row=1, column=3, sticky='ew')
-        
+
         ttk.Label(hsv_frame, text=get_lang('settings_ocr_upper_bound')).grid(row=2, column=0, sticky='w')
         ttk.Entry(hsv_frame, textvariable=self.var_h_max, width=5, validate="key", validatecommand=self.validate_integer).grid(row=2, column=1, sticky='ew')
         ttk.Entry(hsv_frame, textvariable=self.var_s_max, width=5, validate="key", validatecommand=self.validate_integer).grid(row=2, column=2, sticky='ew', padx=5)
         ttk.Entry(hsv_frame, textvariable=self.var_v_max, width=5, validate="key", validatecommand=self.validate_integer).grid(row=2, column=3, sticky='ew')
-        
+
         ttk.Button(frame, text=get_lang('settings_ocr_live_preview'), command=self.canli_onizleme_baslat).grid(row=3, column=0, columnspan=3, pady=(10,0), sticky='ew', padx=5)
 
     def populate_interface_tab(self, frame):
         frame.columnconfigure(1, weight=1)
-        
+
         ttk.Label(frame, text=get_lang('settings_font_family')).grid(row=0, column=0, sticky='w', padx=5, pady=5)
         font_combo = ttk.Combobox(frame, textvariable=self.var_font_ailesi, values=sorted(font.families()), state='readonly')
         font_combo.grid(row=0, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
@@ -223,13 +222,13 @@ class AyarlarPenceresi(tk.Toplevel):
         ttk.Checkbutton(style_container, text=get_lang('settings_font_bold'), variable=self.var_font_kalin).pack(side='left', padx=5)
         ttk.Checkbutton(style_container, text=get_lang('settings_font_italic'), variable=self.var_font_italik).pack(side='left', padx=5)
         ttk.Checkbutton(style_container, text=get_lang('settings_font_underline'), variable=self.var_font_alti_cizili).pack(side='left', padx=5)
-        
+
         ttk.Label(frame, text=get_lang('settings_font_color')).grid(row=2, column=0, sticky='w', padx=5, pady=5); ttk.Entry(frame, textvariable=self.var_font_rengi).grid(row=2, column=1, sticky='ew', padx=5, pady=5); ttk.Button(frame, text="...", command=lambda v=self.var_font_rengi: self.renk_sec(v), width=3).grid(row=2, column=2, sticky='ew', padx=(0,5), pady=5)
         ttk.Label(frame, text=get_lang('settings_bg_color')).grid(row=3, column=0, sticky='w', padx=5, pady=5); ttk.Entry(frame, textvariable=self.var_bg_rengi).grid(row=3, column=1, sticky='ew', padx=5, pady=5); ttk.Button(frame, text="...", command=lambda v=self.var_bg_rengi: self.renk_sec(v), width=3).grid(row=3, column=2, sticky='ew', padx=(0,5), pady=5)
         ttk.Label(frame, text=get_lang('settings_opacity')).grid(row=4, column=0, sticky='w', padx=5, pady=5); ttk.Entry(frame, textvariable=self.var_seffaflik, validate="key", validatecommand=self.validate_float).grid(row=4, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
         ttk.Label(frame, text=get_lang('settings_top_margin')).grid(row=5, column=0, sticky='w', padx=5, pady=5); ttk.Entry(frame, textvariable=self.var_ust_bosluk, validate="key", validatecommand=self.validate_integer).grid(row=5, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
         ttk.Label(frame, text=get_lang('settings_translation_lifespan')).grid(row=6, column=0, sticky='w', padx=5, pady=5); ttk.Entry(frame, textvariable=self.var_ceviri_omru, validate="key", validatecommand=self.validate_float).grid(row=6, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
-        
+
     def populate_hotkeys_tab(self, frame):
         self.create_hotkey_entry(frame, 'settings_hotkey_select', self.var_alan_sec, 0); self.create_hotkey_entry(frame, 'settings_hotkey_pause', self.var_durdur_devam, 1); self.create_hotkey_entry(frame, 'settings_hotkey_exit', self.var_kapat, 2)
         ttk.Label(frame, text=get_lang('settings_hotkey_info')).grid(row=3, column=0, columnspan=3, sticky='w', padx=5, pady=10)
@@ -240,7 +239,7 @@ class AyarlarPenceresi(tk.Toplevel):
         entry = ttk.Entry(parent, textvariable=var, state="readonly", justify='center')
         entry.grid(row=row, column=1, sticky='ew', pady=5, padx=5)
         entry.bind("<Button-1>", lambda e, v=var: self.dinlemeyi_baslat(v))
-    
+
     def dinlemeyi_baslat(self, var):
         var.set("..."); self.update_idletasks()
         try:
@@ -263,7 +262,7 @@ class AyarlarPenceresi(tk.Toplevel):
         if bolge['width'] < 10 or bolge['height'] < 10:
             messagebox.showwarning(get_lang('warning_title_no_area'), get_lang('warning_body_no_area_preview'), parent=self)
             return
-            
+
         self.withdraw()
         self.ocr_event.clear()
         self.master.after(150, lambda: self.launch_preview_thread(bolge))
@@ -305,7 +304,7 @@ class AyarlarPenceresi(tk.Toplevel):
                 messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_similarity_range"), parent=self); return
         except ValueError:
             messagebox.showerror(get_lang("error_title_invalid_value"), get_lang("error_body_similarity_invalid"), parent=self); return
-            
+
         eski_ayarlar = AYARLAR.copy()
         yeni_ayarlar = {
             'baslangicta_baslat': self.var_baslangicta_baslat.get(), 'tesseract_yolu': self.var_tesseract.get(), 'api_anahtari': self.var_api_key.get(),
@@ -356,10 +355,10 @@ class AlanSecici(tk.Toplevel):
         self.start_x = self.canvas.canvasx(event.x)
         self.start_y = self.canvas.canvasy(event.y)
         self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline='red', width=2)
-    
+
     def on_mouse_drag(self, event):
         self.canvas.coords(self.rect, self.start_x, self.start_y, self.canvas.canvasx(event.x), self.canvas.canvasy(event.y))
-    
+
     def on_mouse_release(self, event):
         if not self.start_x:
             self.destroy()
@@ -379,7 +378,7 @@ class OverlayGUI(tk.Toplevel):
         self.wm_attributes("-transparentcolor", "gray15")
         self.config(bg="gray15")
         self.screen_width = self.winfo_screenwidth()
-        
+
         self.container = tk.Frame(self, bg='gray15')
         self.container.pack()
 
@@ -387,16 +386,14 @@ class OverlayGUI(tk.Toplevel):
         self.translation_labels = []
         self.font_obj = font.Font()
 
-        # --- YENİ: Sürükleme için değişkenler ---
         self._drag_start_y = 0
         self.current_x = 0
         self.current_y = AYARLAR['ekran_ust_bosluk']
 
-        # --- DEĞİŞİKLİK: Sürükleme olayları pencerenin kendisine bağlanıyor ---
         self.container.bind("<ButtonPress-1>", self.on_drag_start)
         self.container.bind("<B1-Motion>", self.on_drag_motion)
         self.container.bind("<ButtonRelease-1>", self.on_drag_stop)
-        
+
         self.apply_settings()
         self.withdraw()
         self.after(100, self.update_display_loop)
@@ -420,13 +417,13 @@ class OverlayGUI(tk.Toplevel):
 
     def on_drag_start(self, event):
         self._drag_start_y = event.y_root
-    
+
     def on_drag_motion(self, event):
         delta_y = event.y_root - self._drag_start_y
         new_y = self.winfo_y() + delta_y
-        
+
         new_y = max(0, min(new_y, self.winfo_screenheight() - self.winfo_height()))
-        
+
         self.geometry(f"+{self.winfo_x()}+{new_y}")
         self._drag_start_y = event.y_root
 
@@ -439,8 +436,7 @@ class OverlayGUI(tk.Toplevel):
     def update_display_loop(self):
         current_time = time.time()
         self.active_translations = [t for t in self.active_translations if t['death_time'] > current_time]
-        
-        # İçerik değişmiş mi kontrol et
+
         current_label_texts = [label.cget("text") for label in self.translation_labels]
         new_translation_texts = [t['text'] for t in self.active_translations]
 
@@ -461,17 +457,15 @@ class OverlayGUI(tk.Toplevel):
                                     padx=15, pady=5
                                    )
                     label.pack(pady=2)
-                    # Sürükleme olaylarını etikete de bağlayarak daha geniş bir tutma alanı sağla
                     label.bind("<ButtonPress-1>", self.on_drag_start)
                     label.bind("<B1-Motion>", self.on_drag_motion)
                     label.bind("<ButtonRelease-1>", self.on_drag_stop)
                     self.translation_labels.append(label)
 
-                # --- DEĞİŞİKLİK: Konumlandırma mantığı basitleştirildi ---
                 self.update_idletasks()
                 width = self.container.winfo_reqwidth()
                 height = self.container.winfo_reqheight()
                 self.current_x = (self.screen_width - width) // 2
                 self.geometry(f"{width}x{height}+{self.current_x}+{self.current_y}")
-        
+
         self.after(100, self.update_display_loop)

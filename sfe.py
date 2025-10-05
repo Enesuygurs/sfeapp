@@ -1,5 +1,3 @@
-# sfe.py
-
 import time
 import threading
 import queue
@@ -101,7 +99,7 @@ def main_translation_loop():
                     img = np.array(sct.grab(bolge))
                     isleme_modu = AYARLAR.get('isleme_modu', 'gri_esik')
                     print(f"Mod: {isleme_modu}")
-                    
+
                     if isleme_modu == 'renk_filtresi':
                         hsv_img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
                         hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
@@ -145,10 +143,10 @@ def main_translation_loop():
 
                     if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
                         print(f"Filtre: Minimum uzunluk ({AYARLAR['kaynak_metin_min_uzunluk']}) geçildi.")
-                        
+
                         benzerlik = SequenceMatcher(None, temiz_metin, son_metin).ratio()
                         print(f"Benzerlik: {benzerlik:.2f} (Eşik: {AYARLAR['kaynak_metin_benzerlik_esigi']})")
-                        
+
                         if benzerlik < AYARLAR['kaynak_metin_benzerlik_esigi']:
                             print(">>> KARAR: YENİ METİN! Çeviriye gönderiliyor...")
                             son_metin = temiz_metin
@@ -166,7 +164,7 @@ def main_translation_loop():
                                         gui_queue.put({'type': 'update_text', 'text': f"[{get_lang('error_translation')}]"})
                         else:
                             print(">>> KARAR: Benzer metin, çeviri atlanıyor.")
-                    
+
                 time.sleep(AYARLAR['kontrol_araligi'])
             except Exception as e:
                 print(f"Ana döngüde beklenmedik hata: {type(e).__name__} - {e}")
@@ -178,17 +176,17 @@ if __name__ == "__main__":
 
     pytesseract.pytesseract.tesseract_cmd = AYARLAR['tesseract_yolu']
     is_paused = not AYARLAR['baslangicta_baslat'] or AYARLAR['width'] < 10 or AYARLAR['height'] < 10
-    
+
     hotkey_callbacks = {'register': register_hotkeys, 'update_tray': update_tray_menu, 'toggle': toggle_pause}
-    
+
     gui_manager_thread = threading.Thread(target=lambda: GuiManager(gui_queue, hotkey_callbacks, ocr_izin_verildi))
     gui_manager_thread.start()
-    
+
     translation_thread = threading.Thread(target=main_translation_loop, daemon=True)
     translation_thread.start()
-    
+
     register_hotkeys()
-    
+
     try:
         icon_running = Image.open(get_resource_path("images/icon.png"))
         icon_stopped = Image.open(get_resource_path("images/stop.png"))
@@ -199,9 +197,9 @@ if __name__ == "__main__":
 
     initial_icon = icon_stopped if is_paused else icon_running
     tray_icon = pystray.Icon(get_lang("app_title"), initial_icon, menu=pystray.Menu())
-    
+
     update_tray_menu()
-    
+
     print("Uygulama başlatıldı. Sistem tepsisi ikonunu kontrol edin.")
     tray_icon.run()
 

@@ -29,13 +29,11 @@ class OCRTespitAraci:
 
         with mss.mss() as sct:
             while True:
-                # Pencerenin kullanıcı tarafından kapatılıp kapatılmadığını kontrol et
-                # Bu, getTrackbarPos'tan önce yapılmalı
                 if cv2.getWindowProperty(self.window_name, cv2.WND_PROP_VISIBLE) < 1 or cv2.getWindowProperty(self.controls_window_name, cv2.WND_PROP_VISIBLE) < 1:
                     break
 
                 img = np.array(sct.grab(self.bolge))
-                
+
                 mode = cv2.getTrackbarPos("Mod (0:Gri 1:Adaptif 2:Renk)", self.controls_window_name)
                 threshold_val = cv2.getTrackbarPos("Gri Esik Degeri", self.controls_window_name)
                 h_min = cv2.getTrackbarPos("H Min", self.controls_window_name)
@@ -57,19 +55,17 @@ class OCRTespitAraci:
                         islenmis_img = cv2.adaptiveThreshold(gri_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
                     else:
                         _, islenmis_img = cv2.threshold(gri_img, threshold_val, 255, cv2.THRESH_BINARY)
-                
+
                 islenmis_img_bgr = cv2.cvtColor(islenmis_img, cv2.COLOR_GRAY2BGR)
                 orijinal_bgr = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
                 combined_view = np.hstack((orijinal_bgr, islenmis_img_bgr))
-                
+
                 cv2.imshow(self.window_name, combined_view)
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
-        
-        # --- DEĞİŞİKLİK BURADA: Neşter (Hedefli Temizlik) Kullanımı ---
+
         cv2.destroyWindow(self.window_name)
         cv2.destroyWindow(self.controls_window_name)
-        # --- BİTİŞ ---
 
         print("Onizleme kapatildi.")

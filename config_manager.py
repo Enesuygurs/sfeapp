@@ -1,5 +1,3 @@
-# config_manager.py
-
 import os
 import sys
 import json
@@ -37,11 +35,11 @@ def ayarlari_kaydet():
     config['Bolge'] = {'top': str(AYARLAR['top']), 'left': str(AYARLAR['left']), 'width': str(AYARLAR['width']), 'height': str(AYARLAR['height'])}
     config['OCR'] = {'isleme_modu': AYARLAR['isleme_modu'], 'esik_degeri': str(AYARLAR['esik_degeri']), 'otomatik_ters_cevirme': str(AYARLAR['otomatik_ters_cevirme']), 'otomatik_ters_cevirme_esigi': str(AYARLAR['otomatik_ters_cevirme_esigi']), 'renk_alt_sinir_h': str(AYARLAR['renk_alt_sinir_h']), 'renk_alt_sinir_s': str(AYARLAR['renk_alt_sinir_s']), 'renk_alt_sinir_v': str(AYARLAR['renk_alt_sinir_v']), 'renk_ust_sinir_h': str(AYARLAR['renk_ust_sinir_h']), 'renk_ust_sinir_s': str(AYARLAR['renk_ust_sinir_s']), 'renk_ust_sinir_v': str(AYARLAR['renk_ust_sinir_v'])}
     config['Arayuz'] = {
-        'font_ailesi': AYARLAR['font_ailesi'], 'font_boyutu': str(AYARLAR['font_boyutu']), 
+        'font_ailesi': AYARLAR['font_ailesi'], 'font_boyutu': str(AYARLAR['font_boyutu']),
         'font_kalin': str(AYARLAR['font_kalin']), 'font_italik': str(AYARLAR['font_italik']), 'font_alti_cizili': str(AYARLAR['font_alti_cizili']),
-        'font_rengi': AYARLAR['font_rengi'], 'arka_plan_rengi': AYARLAR['arka_plan_rengi'], 'seffaflik': str(AYARLAR['seffaflik']), 
-        'ekran_ust_bosluk': str(AYARLAR['ekran_ust_bosluk']), 'kontrol_araligi': str(AYARLAR['kontrol_araligi']), 
-        'ceviri_omru': str(AYARLAR['ceviri_omru']), 'kaynak_metin_benzerlik_esigi': str(AYARLAR['kaynak_metin_benzerlik_esigi']), 
+        'font_rengi': AYARLAR['font_rengi'], 'arka_plan_rengi': AYARLAR['arka_plan_rengi'], 'seffaflik': str(AYARLAR['seffaflik']),
+        'ekran_ust_bosluk': str(AYARLAR['ekran_ust_bosluk']), 'kontrol_araligi': str(AYARLAR['kontrol_araligi']),
+        'ceviri_omru': str(AYARLAR['ceviri_omru']), 'kaynak_metin_benzerlik_esigi': str(AYARLAR['kaynak_metin_benzerlik_esigi']),
         'kaynak_metin_min_uzunluk': str(AYARLAR['kaynak_metin_min_uzunluk'])
     }
     config['Kisayollar'] = {'alan_sec': AYARLAR['alan_sec'], 'durdur_devam_et': AYARLAR['durdur_devam_et'], 'programi_kapat': AYARLAR['programi_kapat']}
@@ -57,8 +55,8 @@ def ayarlari_yukle():
         config['OCR'] = {'isleme_modu': 'renk_filtresi', 'esik_degeri': '180', 'otomatik_ters_cevirme': 'True', 'otomatik_ters_cevirme_esigi': '127', 'renk_alt_sinir_h': '0', 'renk_alt_sinir_s': '0', 'renk_alt_sinir_v': '180', 'renk_ust_sinir_h': '180', 'renk_ust_sinir_s': '30', 'renk_ust_sinir_v': '255'}
         config['Arayuz'] = {
             'font_ailesi': 'Arial', 'font_boyutu': '20', 'font_kalin': 'True', 'font_italik': 'False', 'font_alti_cizili': 'False',
-            'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7', 
-            'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.4', 'ceviri_omru': '3.0', 
+            'font_rengi': 'white', 'arka_plan_rengi': 'black', 'seffaflik': '0.7',
+            'ekran_ust_bosluk': '30', 'kontrol_araligi': '0.4', 'ceviri_omru': '3.0',
             'kaynak_metin_benzerlik_esigi': '0.9', 'kaynak_metin_min_uzunluk': '3'
         }
         config['Kisayollar'] = {'alan_sec': 'f8', 'durdur_devam_et': 'f9', 'programi_kapat': 'f10'}
