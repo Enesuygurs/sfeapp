@@ -5,10 +5,10 @@ import queue
 import keyboard
 import time
 import threading
-from config_manager import (AYARLAR, get_lang, ayarlari_kaydet, arayuz_dilini_yukle,
-                           get_key_from_value, DESTEKLENEN_HEDEF_DILLER,
-                           DESTEKLENEN_ARAYUZ_DILLERI, get_resource_path)
-from ocr_tester import OCRTespitAraci
+from config_manager import (SETTINGS as AYARLAR, get_lang, save_settings, load_interface_language,
+                           get_key_from_value, SUPPORTED_TARGET_LANGUAGES as DESTEKLENEN_HEDEF_DILLER,
+                           SUPPORTED_INTERFACE_LANGUAGES as DESTEKLENEN_ARAYUZ_DILLERI, get_resource_path)
+from ocr_tester import OCRDetectionTool
 
 class GuiManager:
     def __init__(self, gui_queue, hotkey_callbacks, ocr_event):
@@ -32,7 +32,7 @@ class GuiManager:
                 self.open_settings_window()
             elif msg_type == 'open_selector':
                 should_resume = message.get('should_resume', False)
-                selector = AlanSecici(self.root)
+                selector = AreaSelector(self.root)
                 self.root.wait_window(selector)
                 if should_resume:
                     self.hotkey_callbacks['toggle']()
@@ -52,11 +52,11 @@ class GuiManager:
         if self.settings_window and self.settings_window.winfo_exists():
             self.settings_window.lift()
             return
-        self.settings_window = AyarlarPenceresi(self.root, self.overlay, self.hotkey_callbacks, self.ocr_event)
+        self.settings_window = SettingsWindow(self.root, self.overlay, self.hotkey_callbacks, self.ocr_event)
         self.root.wait_window(self.settings_window)
         self.settings_window = None
 
-class AyarlarPenceresi(tk.Toplevel):
+class SettingsWindow(tk.Toplevel):
     def __init__(self, master, overlay_ref, hotkey_callbacks, ocr_event):
         super().__init__(master)
         self.overlay = overlay_ref
@@ -268,7 +268,7 @@ class AyarlarPenceresi(tk.Toplevel):
         self.master.after(150, lambda: self.launch_preview_thread(bolge))
 
     def launch_preview_thread(self, bolge):
-        arac = OCRTespitAraci(bolge)
+        arac = OCRDetectionTool(bolge)
         preview_thread = threading.Thread(target=arac.run, daemon=True)
         preview_thread.start()
         self.master.after(200, self.check_preview_thread, preview_thread)
@@ -324,16 +324,16 @@ class AyarlarPenceresi(tk.Toplevel):
             'alan_sec': self.var_alan_sec.get(), 'durdur_devam_et': self.var_durdur_devam.get(), 'programi_kapat': self.var_kapat.get()
         }
         AYARLAR.update(yeni_ayarlar)
-        ayarlari_kaydet()
+        save_settings()
         if self.overlay.winfo_exists(): self.overlay.apply_settings()
         yeni_kisayollar = (AYARLAR['durdur_devam_et'], AYARLAR['programi_kapat'], AYARLAR['alan_sec'])
         eski_kisayollar = (eski_ayarlar['durdur_devam_et'], eski_ayarlar['programi_kapat'], eski_ayarlar['alan_sec'])
         if yeni_kisayollar != eski_kisayollar: self.hotkey_callbacks['register']()
         if eski_ayarlar['arayuz_dili'] != AYARLAR['arayuz_dili']:
-            arayuz_dilini_yukle(AYARLAR['arayuz_dili']); self.hotkey_callbacks['update_tray']()
+            load_interface_language(AYARLAR['arayuz_dili']); self.hotkey_callbacks['update_tray']()
         messagebox.showinfo(get_lang('app_title'), get_lang('info_settings_saved_body'), parent=self); self.destroy()
 
-class AlanSecici(tk.Toplevel):
+class AreaSelector(tk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
         self.attributes("-fullscreen", True)
@@ -367,7 +367,7 @@ class AlanSecici(tk.Toplevel):
         x2, y2 = int(max(self.start_x, event.x)), int(max(self.start_y, event.y))
         if (x2 - x1) > 10 and (y2 - y1) > 10:
             AYARLAR.update({'top': y1, 'left': x1, 'width': (x2 - x1), 'height': (y2 - y1)})
-            ayarlari_kaydet()
+            save_settings()
         self.destroy()
 
 class OverlayGUI(tk.Toplevel):
@@ -430,7 +430,7 @@ class OverlayGUI(tk.Toplevel):
     def on_drag_stop(self, event):
         self.current_y = self.winfo_y()
         AYARLAR['ekran_ust_bosluk'] = self.current_y
-        ayarlari_kaydet()
+        save_settings()
         print(f"Yeni dikey konum kaydedildi: {self.current_y}")
 
     def update_display_loop(self):

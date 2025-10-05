@@ -12,41 +12,40 @@ import pystray
 from PIL import Image
 import re
 from difflib import SequenceMatcher
-from config_manager import AYARLAR, get_lang, get_resource_path, arayuz_dilini_yukle
+from config_manager import SETTINGS as AYARLAR, get_lang, get_resource_path, load_interface_language
 from gui import GuiManager
 
 gui_queue = queue.Queue()
 is_paused = False
-son_metin = ""
+last_text = ""
 tray_icon = None
 translator = None
 icon_running = None
 icon_stopped = None
-ocr_izin_verildi = None
+ocr_allowed = None
 
 def register_hotkeys():
     keyboard.unhook_all()
     keyboard.add_hotkey(AYARLAR['durdur_devam_et'], toggle_pause)
     keyboard.add_hotkey(AYARLAR['programi_kapat'], quit_program)
-    keyboard.add_hotkey(AYARLAR['alan_sec'], alani_sec_ve_kaydet)
+    keyboard.add_hotkey(AYARLAR['alan_sec'], select_area_and_save)
 
 def toggle_pause(*args):
     global is_paused
     is_paused = not is_paused
-    status = "DURDURULDU" if is_paused else "BAŞLATILDI"
-    print(f"\n--- Çeviri {status} ---")
+    print(f"\n--- Çeviri {'DURDURULDU' if is_paused else 'BAŞLATILDI'} ---")
     update_tray_menu()
 
 def quit_program(*args):
     if tray_icon: tray_icon.stop()
     gui_queue.put({'type': 'quit'})
 
-def alani_sec_ve_kaydet():
+def select_area_and_save():
     should_resume_after = not is_paused
     if should_resume_after: toggle_pause()
     gui_queue.put({'type': 'open_selector', 'should_resume': should_resume_after})
 
-def ayarlari_penceresini_ac():
+def open_settings_window():
     gui_queue.put({'type': 'open_settings'})
 
 def update_tray_menu():
@@ -57,8 +56,8 @@ def update_tray_menu():
     pause_text = get_lang('menu_resume') if is_paused else get_lang('menu_pause')
     new_menu = pystray.Menu(
         pystray.MenuItem(pause_text, toggle_pause),
-        pystray.MenuItem(get_lang('menu_select_area'), alani_sec_ve_kaydet),
-        pystray.MenuItem(get_lang('menu_settings'), ayarlari_penceresini_ac),
+        pystray.MenuItem(get_lang('menu_select_area'), select_area_and_save),
+        pystray.MenuItem(get_lang('menu_settings'), open_settings_window),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(get_lang('menu_exit'), quit_program)
     )
@@ -66,7 +65,7 @@ def update_tray_menu():
     tray_icon.menu = new_menu
 
 def main_translation_loop():
-    global son_metin, translator
+    global last_text, translator
     try:
         translator = deepl.Translator(AYARLAR['api_anahtari'])
     except Exception as e:
@@ -77,7 +76,7 @@ def main_translation_loop():
     with mss.mss() as sct:
         while True:
             try:
-                if not ocr_izin_verildi.is_set():
+                if not ocr_allowed.is_set():
                     time.sleep(0.2)
                     continue
 
@@ -144,12 +143,12 @@ def main_translation_loop():
                     if temiz_metin and len(temiz_metin) >= AYARLAR['kaynak_metin_min_uzunluk']:
                         print(f"Filtre: Minimum uzunluk ({AYARLAR['kaynak_metin_min_uzunluk']}) geçildi.")
 
-                        benzerlik = SequenceMatcher(None, temiz_metin, son_metin).ratio()
+                        benzerlik = SequenceMatcher(None, temiz_metin, last_text).ratio()
                         print(f"Benzerlik: {benzerlik:.2f} (Eşik: {AYARLAR['kaynak_metin_benzerlik_esigi']})")
 
                         if benzerlik < AYARLAR['kaynak_metin_benzerlik_esigi']:
                             print(">>> KARAR: YENİ METİN! Çeviriye gönderiliyor...")
-                            son_metin = temiz_metin
+                            last_text = temiz_metin
                             if translator:
                                 try:
                                     if not is_paused:
@@ -171,15 +170,15 @@ def main_translation_loop():
                 time.sleep(2)
 
 if __name__ == "__main__":
-    ocr_izin_verildi = threading.Event()
-    ocr_izin_verildi.set()
+    ocr_allowed = threading.Event()
+    ocr_allowed.set()
 
     pytesseract.pytesseract.tesseract_cmd = AYARLAR['tesseract_yolu']
     is_paused = not AYARLAR['baslangicta_baslat'] or AYARLAR['width'] < 10 or AYARLAR['height'] < 10
 
     hotkey_callbacks = {'register': register_hotkeys, 'update_tray': update_tray_menu, 'toggle': toggle_pause}
 
-    gui_manager_thread = threading.Thread(target=lambda: GuiManager(gui_queue, hotkey_callbacks, ocr_izin_verildi))
+    gui_manager_thread = threading.Thread(target=lambda: GuiManager(gui_queue, hotkey_callbacks, ocr_allowed))
     gui_manager_thread.start()
 
     translation_thread = threading.Thread(target=main_translation_loop, daemon=True)

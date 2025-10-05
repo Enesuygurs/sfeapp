@@ -3,11 +3,11 @@ import sys
 import json
 import configparser
 
-CONFIG_DOSYASI = 'config.ini'
-AYARLAR = {}
+CONFIG_FILE = 'config.ini'
+SETTINGS = {}
 LANG_STRINGS = {}
-DESTEKLENEN_ARAYUZ_DILLERI = {}
-DESTEKLENEN_HEDEF_DILLER = {}
+SUPPORTED_INTERFACE_LANGUAGES = {}
+SUPPORTED_TARGET_LANGUAGES = {}
 config = configparser.ConfigParser()
 
 def get_lang(key, **kwargs):
@@ -21,35 +21,35 @@ def get_resource_path(relative_path):
     except Exception: base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-def arayuz_dilini_yukle(dil_kodu):
+def load_interface_language(lang_code):
     global LANG_STRINGS
     try:
-        lang_file_path = get_resource_path(f"lang/{dil_kodu.lower()}.json")
+        lang_file_path = get_resource_path(f"lang/{lang_code.lower()}.json")
         with open(lang_file_path, 'r', encoding='utf-8') as f: LANG_STRINGS = json.load(f)
     except FileNotFoundError:
         lang_file_path = get_resource_path("lang/en.json")
         with open(lang_file_path, 'r', encoding='utf-8') as f: LANG_STRINGS = json.load(f)
 
-def ayarlari_kaydet():
-    config['Genel'] = {'tesseract_yolu': AYARLAR['tesseract_yolu'], 'api_anahtari': AYARLAR['api_anahtari'], 'arayuz_dili': AYARLAR['arayuz_dili'], 'hedef_dil': AYARLAR['hedef_dil'], 'baslangicta_baslat': str(AYARLAR['baslangicta_baslat'])}
-    config['Bolge'] = {'top': str(AYARLAR['top']), 'left': str(AYARLAR['left']), 'width': str(AYARLAR['width']), 'height': str(AYARLAR['height'])}
-    config['OCR'] = {'isleme_modu': AYARLAR['isleme_modu'], 'esik_degeri': str(AYARLAR['esik_degeri']), 'otomatik_ters_cevirme': str(AYARLAR['otomatik_ters_cevirme']), 'otomatik_ters_cevirme_esigi': str(AYARLAR['otomatik_ters_cevirme_esigi']), 'renk_alt_sinir_h': str(AYARLAR['renk_alt_sinir_h']), 'renk_alt_sinir_s': str(AYARLAR['renk_alt_sinir_s']), 'renk_alt_sinir_v': str(AYARLAR['renk_alt_sinir_v']), 'renk_ust_sinir_h': str(AYARLAR['renk_ust_sinir_h']), 'renk_ust_sinir_s': str(AYARLAR['renk_ust_sinir_s']), 'renk_ust_sinir_v': str(AYARLAR['renk_ust_sinir_v'])}
+def save_settings():
+    config['Genel'] = {'tesseract_yolu': SETTINGS['tesseract_yolu'], 'api_anahtari': SETTINGS['api_anahtari'], 'arayuz_dili': SETTINGS['arayuz_dili'], 'hedef_dil': SETTINGS['hedef_dil'], 'baslangicta_baslat': str(SETTINGS['baslangicta_baslat'])}
+    config['Bolge'] = {'top': str(SETTINGS['top']), 'left': str(SETTINGS['left']), 'width': str(SETTINGS['width']), 'height': str(SETTINGS['height'])}
+    config['OCR'] = {'isleme_modu': SETTINGS['isleme_modu'], 'esik_degeri': str(SETTINGS['esik_degeri']), 'otomatik_ters_cevirme': str(SETTINGS['otomatik_ters_cevirme']), 'otomatik_ters_cevirme_esigi': str(SETTINGS['otomatik_ters_cevirme_esigi']), 'renk_alt_sinir_h': str(SETTINGS['renk_alt_sinir_h']), 'renk_alt_sinir_s': str(SETTINGS['renk_alt_sinir_s']), 'renk_alt_sinir_v': str(SETTINGS['renk_alt_sinir_v']), 'renk_ust_sinir_h': str(SETTINGS['renk_ust_sinir_h']), 'renk_ust_sinir_s': str(SETTINGS['renk_ust_sinir_s']), 'renk_ust_sinir_v': str(SETTINGS['renk_ust_sinir_v'])}
     config['Arayuz'] = {
-        'font_ailesi': AYARLAR['font_ailesi'], 'font_boyutu': str(AYARLAR['font_boyutu']),
-        'font_kalin': str(AYARLAR['font_kalin']), 'font_italik': str(AYARLAR['font_italik']), 'font_alti_cizili': str(AYARLAR['font_alti_cizili']),
-        'font_rengi': AYARLAR['font_rengi'], 'arka_plan_rengi': AYARLAR['arka_plan_rengi'], 'seffaflik': str(AYARLAR['seffaflik']),
-        'ekran_ust_bosluk': str(AYARLAR['ekran_ust_bosluk']), 'kontrol_araligi': str(AYARLAR['kontrol_araligi']),
-        'ceviri_omru': str(AYARLAR['ceviri_omru']), 'kaynak_metin_benzerlik_esigi': str(AYARLAR['kaynak_metin_benzerlik_esigi']),
-        'kaynak_metin_min_uzunluk': str(AYARLAR['kaynak_metin_min_uzunluk'])
+        'font_ailesi': SETTINGS['font_ailesi'], 'font_boyutu': str(SETTINGS['font_boyutu']),
+        'font_kalin': str(SETTINGS['font_kalin']), 'font_italik': str(SETTINGS['font_italik']), 'font_alti_cizili': str(SETTINGS['font_alti_cizili']),
+        'font_rengi': SETTINGS['font_rengi'], 'arka_plan_rengi': SETTINGS['arka_plan_rengi'], 'seffaflik': str(SETTINGS['seffaflik']),
+        'ekran_ust_bosluk': str(SETTINGS['ekran_ust_bosluk']), 'kontrol_araligi': str(SETTINGS['kontrol_araligi']),
+        'ceviri_omru': str(SETTINGS['ceviri_omru']), 'kaynak_metin_benzerlik_esigi': str(SETTINGS['kaynak_metin_benzerlik_esigi']),
+        'kaynak_metin_min_uzunluk': str(SETTINGS['kaynak_metin_min_uzunluk'])
     }
-    config['Kisayollar'] = {'alan_sec': AYARLAR['alan_sec'], 'durdur_devam_et': AYARLAR['durdur_devam_et'], 'programi_kapat': AYARLAR['programi_kapat']}
-    with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile: config.write(configfile)
+    config['Kisayollar'] = {'alan_sec': SETTINGS['alan_sec'], 'durdur_devam_et': SETTINGS['durdur_devam_et'], 'programi_kapat': SETTINGS['programi_kapat']}
+    with open(CONFIG_FILE, 'w', encoding='utf-8') as configfile: config.write(configfile)
 
-def ayarlari_yukle():
-    global DESTEKLENEN_HEDEF_DILLER, DESTEKLENEN_ARAYUZ_DILLERI, AYARLAR
-    with open(get_resource_path('diller.json'), 'r', encoding='utf-8') as f: DESTEKLENEN_HEDEF_DILLER = json.load(f)
-    with open(get_resource_path('arayuz_dilleri.json'), 'r', encoding='utf-8') as f: DESTEKLENEN_ARAYUZ_DILLERI = json.load(f)
-    if not os.path.exists(CONFIG_DOSYASI):
+def load_settings():
+    global SUPPORTED_TARGET_LANGUAGES, SUPPORTED_INTERFACE_LANGUAGES, SETTINGS
+    with open(get_resource_path('diller.json'), 'r', encoding='utf-8') as f: SUPPORTED_TARGET_LANGUAGES = json.load(f)
+    with open(get_resource_path('arayuz_dilleri.json'), 'r', encoding='utf-8') as f: SUPPORTED_INTERFACE_LANGUAGES = json.load(f)
+    if not os.path.exists(CONFIG_FILE):
         config['Genel'] = {'tesseract_yolu': '', 'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True'}
         config['Bolge'] = {'top': '0', 'left': '0', 'width': '0', 'height': '0'}
         config['OCR'] = {'isleme_modu': 'renk_filtresi', 'esik_degeri': '180', 'otomatik_ters_cevirme': 'True', 'otomatik_ters_cevirme_esigi': '127', 'renk_alt_sinir_h': '0', 'renk_alt_sinir_s': '0', 'renk_alt_sinir_v': '180', 'renk_ust_sinir_h': '180', 'renk_ust_sinir_s': '30', 'renk_ust_sinir_v': '255'}
@@ -61,8 +61,8 @@ def ayarlari_yukle():
         }
         config['Kisayollar'] = {'alan_sec': 'f8', 'durdur_devam_et': 'f9', 'programi_kapat': 'f10'}
         with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile: config.write(configfile)
-    config.read(CONFIG_DOSYASI, encoding='utf-8')
-    AYARLAR = {
+    config.read(CONFIG_FILE, encoding='utf-8')
+    SETTINGS = {
         'tesseract_yolu': config.get('Genel', 'tesseract_yolu', fallback=''), 'api_anahtari': config.get('Genel', 'api_anahtari', fallback=''),
         'baslangicta_baslat': config.getboolean('Genel', 'baslangicta_baslat', fallback=True), 'arayuz_dili': config.get('Genel', 'arayuz_dili', fallback='TR'),
         'hedef_dil': config.get('Genel', 'hedef_dil', fallback='TR'),
@@ -81,6 +81,6 @@ def ayarlari_yukle():
         'ceviri_omru': config.getfloat('Arayuz', 'ceviri_omru', fallback=3.0), 'kaynak_metin_benzerlik_esigi': config.getfloat('Arayuz', 'kaynak_metin_benzerlik_esigi', fallback=0.9), 'kaynak_metin_min_uzunluk': config.getint('Arayuz', 'kaynak_metin_min_uzunluk', fallback=3),
         'alan_sec': config.get('Kisayollar', 'alan_sec', fallback='f8'), 'durdur_devam_et': config.get('Kisayollar', 'durdur_devam_et', fallback='f9'), 'programi_kapat': config.get('Kisayollar', 'programi_kapat', fallback='f10')
     }
-    arayuz_dilini_yukle(AYARLAR['arayuz_dili'])
+    load_interface_language(SETTINGS['arayuz_dili'])
 
-ayarlari_yukle()
+load_settings()

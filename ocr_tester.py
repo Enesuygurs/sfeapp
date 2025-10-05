@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 import mss
-from config_manager import AYARLAR
+from config_manager import SETTINGS as AYARLAR
 
-class OCRTespitAraci:
+class OCRDetectionTool:
     def __init__(self, bolge):
         self.bolge = bolge
         self.window_name = "OCR Canli Onizleme"
