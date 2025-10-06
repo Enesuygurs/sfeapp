@@ -1,6 +1,6 @@
 # Subtitles for Everyone (SFE)
 
-A real-time screen text translation application that captures text from selected screen areas using OCR and translates it using DeepL API.
+A powerful real-time screen text translation application that instantly translates subtitles and text overlays in movies, TV shows, games, and any on-screen content using advanced OCR technology and DeepL's high-quality translation API. Break language barriers and enjoy global content without missing a beat!
 
 ## Features
 
