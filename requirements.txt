@@ -1,0 +1,8 @@
+opencv-python
+pytesseract
+deepl
+keyboard
+pystray
+Pillow
+mss
+ttkthemes
