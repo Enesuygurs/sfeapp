@@ -2,6 +2,9 @@
 
 A powerful real-time screen text translation application that instantly translates subtitles and text overlays in movies, TV shows, games, and any on-screen content using advanced OCR technology and DeepL's high-quality translation API. Break language barriers and enjoy global content without missing a beat!
 
+![chrome_6uCRReoojV](https://github.com/user-attachments/assets/fb0f07c2-3898-424c-8d1e-028a6e25cf94)
+
+
 ## Features
 
 - **Real-time OCR**: Captures text from selected screen areas using Tesseract OCR
