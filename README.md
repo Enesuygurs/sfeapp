@@ -2,7 +2,13 @@
 
 A powerful real-time screen text translation application that instantly translates subtitles and text overlays in movies, TV shows, games, and any on-screen content using advanced OCR technology and DeepL's high-quality translation API. Break language barriers and enjoy global content without missing a beat!
 
+**Demo Video**: The videos below are for promotional purposes only and may contain commercial images. Copyright belongs to the game developers. They are used for educational/demo purposes.
+
+## Youtube
 ![chrome_6uCRReoojV](https://github.com/user-attachments/assets/fb0f07c2-3898-424c-8d1e-028a6e25cf94)
+
+## Game
+![chrome_BVAOu8ptGb-ezgif com-optimize](https://github.com/user-attachments/assets/438aa543-542a-47af-968f-fbaf29bea1e4)
 
 
 ## Features
