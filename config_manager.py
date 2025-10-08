@@ -47,8 +47,8 @@ def save_settings():
 
 def load_settings():
     global SUPPORTED_TARGET_LANGUAGES, SUPPORTED_INTERFACE_LANGUAGES, SETTINGS
-    with open(get_resource_path('diller.json'), 'r', encoding='utf-8') as f: SUPPORTED_TARGET_LANGUAGES = json.load(f)
-    with open(get_resource_path('arayuz_dilleri.json'), 'r', encoding='utf-8') as f: SUPPORTED_INTERFACE_LANGUAGES = json.load(f)
+    with open(get_resource_path('target_languages.json'), 'r', encoding='utf-8') as f: SUPPORTED_TARGET_LANGUAGES = json.load(f)
+    with open(get_resource_path('interface_languages.json'), 'r', encoding='utf-8') as f: SUPPORTED_INTERFACE_LANGUAGES = json.load(f)
     if not os.path.exists(CONFIG_FILE):
         config['Genel'] = {'tesseract_yolu': '', 'api_anahtari': '', 'arayuz_dili': 'TR', 'hedef_dil': 'TR', 'baslangicta_baslat': 'True'}
         config['Bolge'] = {'top': '0', 'left': '0', 'width': '0', 'height': '0'}
@@ -60,7 +60,7 @@ def load_settings():
             'kaynak_metin_benzerlik_esigi': '0.9', 'kaynak_metin_min_uzunluk': '3'
         }
         config['Kisayollar'] = {'alan_sec': 'f8', 'durdur_devam_et': 'f9', 'programi_kapat': 'f10'}
-        with open(CONFIG_DOSYASI, 'w', encoding='utf-8') as configfile: config.write(configfile)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as configfile: config.write(configfile)
     config.read(CONFIG_FILE, encoding='utf-8')
     SETTINGS = {
         'tesseract_yolu': config.get('Genel', 'tesseract_yolu', fallback=''), 'api_anahtari': config.get('Genel', 'api_anahtari', fallback=''),

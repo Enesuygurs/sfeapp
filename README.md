@@ -134,8 +134,8 @@ sfeapp/
 ├── config_manager.py      # Configuration management
 ├── ocr_tester.py          # OCR testing and preview tool
 ├── config.ini            # User configuration file
-├── diller.json           # Supported target languages
-├── arayuz_dilleri.json   # Supported interface languages
+├── target_languages.json   # Supported target languages
+├── interface_languages.json # Supported interface languages
 ├── lang/                 # Language files
 │   ├── en.json
 │   ├── tr.json
@@ -144,8 +144,8 @@ sfeapp/
 │   └── fr.json
 ├── images/               # Application icons
 │   ├── icon.png
-│   ├── stop.png
-│   └── icson.png
+│   ├── pause_icon.png
+│   └── stop.png
 └── README.md
 ```
 
